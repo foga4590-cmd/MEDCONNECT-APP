@@ -1,0 +1,388 @@
+import 'package:flutter/material.dart';
+import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/checkoutAddress.dart';
+
+class CartItem {
+  final String name;
+  final String image;
+  int quantity;
+  final double price;
+
+  String? dateRange;
+
+  String type;
+  CartItem({
+    required this.name,
+    required this.image,
+    required this.quantity,
+    required this.price,
+    required this.dateRange,
+    required this.type,
+  });
+}
+
+class CartPage extends StatefulWidget {
+  const CartPage({super.key});
+
+  @override
+  State<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  int selectedCartTab = 0; // 0 = Purchase | 1 = Rental
+
+  int _selectedIndex = 1;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+      if (index == 0) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else if (index == 2) {
+        Navigator.pushReplacementNamed(context, '/wishlist');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredItems = cartItemsGlobal.where((item) {
+  if (selectedCartTab == 0) {
+    return item.type.toLowerCase() == 'buy';
+  } else {
+    return item.type.toLowerCase() == 'rent';
+  }
+}).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        title: const Text(
+          'My Cart',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      backgroundColor: const Color(0xFFF4F4F4),
+
+      body: cartItemsGlobal.isEmpty
+          ? const Center(
+              child: Text("Your cart is empty", style: TextStyle(fontSize: 16)),
+            )
+          : SingleChildScrollView(
+  padding: const EdgeInsets.all(16),
+  child: Column(
+    children: [
+      _buildCartToggle(),
+      const SizedBox(height: 16),
+
+      for (int i = 0; i < filteredItems.length; i++) ...[
+        buildCartItem(
+          item: filteredItems[i],
+          index: cartItemsGlobal.indexOf(filteredItems[i]),
+        ),
+        const SizedBox(height: 12),
+      ],
+      buildOrderSummary(),
+      const SizedBox(height: 90),
+      
+    ],
+  ),
+),
+
+                  
+
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF0A69C3),
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart_outlined),
+            label: 'Cart',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border),
+            label: 'Wishlist',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_none),
+            label: 'Alerts',
+          ),
+        ],
+      ),
+
+      bottomSheet: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SizedBox(
+          height: 50,
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0A69C3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CheckoutAddressPage()),
+              );
+            },
+            child: const Text(
+              'Continue To Address',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+Widget _buildCartToggle() {
+  return Container(
+    padding: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: Colors.grey.shade300,
+      borderRadius: BorderRadius.circular(30),
+    ),
+    child: Row(
+      children: [
+        _toggleItem("Purchase", 0),
+        _toggleItem("Rental", 1),
+      ],
+    ),
+  );
+}
+
+Widget _toggleItem(String title, int index) {
+  final bool isSelected = selectedCartTab == index;
+
+  return Expanded(
+    child: GestureDetector(
+      onTap: () {
+        setState(() => selectedCartTab = index);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0A69C3) : Colors.transparent,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isSelected ? Colors.white : Colors.grey,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+
+  // ================= CART ITEM =================
+
+  Widget buildCartItem({required CartItem item, required int index}) {
+    final isRent = item.type == 'rent';
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _productImage(item.image),
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () {
+                        setState(() {
+                          cartItemsGlobal.removeAt(index);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+
+                Text(
+                  '\$${item.price.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 4),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isRent
+                        ? Colors.orange.shade100
+                        : Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    isRent ? "rent" : "Purchase",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isRent
+                          ? Colors.orange.shade700
+                          : Colors.green.shade700,
+                    ),
+                  ),
+                ),
+
+                if (isRent) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    item.dateRange ?? '',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          if (!isRent)
+            Column(
+              children: [
+                _qtyButton(Icons.add, () {
+                  setState(() => item.quantity++);
+                }),
+                Text('${item.quantity}'),
+                _qtyButton(Icons.remove, () {
+                  if (item.quantity > 1) {
+                    setState(() => item.quantity--);
+                  }
+                }),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _productImage(String path) {
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.asset(path, fit: BoxFit.contain),
+      ),
+    );
+  }
+
+  Widget _qtyButton(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 18),
+      ),
+    );
+  }
+
+  // ================= ORDER SUMMARY =================
+
+  Widget buildOrderSummary() {
+   double subtotal = cartItemsGlobal.where((item) {
+  if (selectedCartTab == 0) {
+    return item.type.toLowerCase() == 'buy';
+  } else {
+    return item.type.toLowerCase() == 'rent';
+  }
+}).fold(
+  0,
+  (sum, item) => sum + (item.price * item.quantity),
+);
+
+
+    double taxes = subtotal * 0.05;
+    double total = subtotal + taxes;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Order Summary',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          _row("Subtotal", subtotal),
+          _row("Estimated Taxes & Fees", taxes),
+          const Divider(height: 24),
+          _row("Total", total, isBold: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String title, double value, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(fontWeight: isBold ? FontWeight.bold : null),
+        ),
+        Text(
+          '\$${value.toStringAsFixed(2)}',
+          style: TextStyle(fontWeight: isBold ? FontWeight.bold : null),
+        ),
+      ],
+    );
+  }
+}

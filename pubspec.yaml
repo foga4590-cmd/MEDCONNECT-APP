@@ -1,0 +1,78 @@
+name: medconnect_app
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  shared_preferences: ^2.3.2
+  badges: ^3.1.2
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/intro_BackGround.png
+    - assets/images/logoPNG.png
+    - assets/images/Defibrillator.png
+    - assets/images/Stetho_Scope.png
+    - assets/images/surgical_light_system.png
+    - assets/images/UltraSound_system.png
+    - assets/images/ventilator_banner.png
+    - assets/images/X-ray_machine.png
+    - assets/images/MRI_Machine.png
+    - assets/images/ventilator.png
+    - assets/images/surgical.png
+    - assets/images/fly.png
+    - assets/images/laboratory.png
+    - assets/images/imageSteth1.png
+    - assets/images/imageSteth2.png
+    - assets/images/imageSteth3.png
+    - assets/images/imageXray1.png
+    - assets/images/imageXray2.png
+    - assets/images/imageXray3.png
+    - assets/images/imageUltra1.png
+    - assets/images/imageUltra2.png
+    - assets/images/imageUltra3.png
+    - assets/images/imageVent1.png
+    - assets/images/imageVent2.png
+    - assets/images/imageVent3.png
+    - assets/images/imageDef1.png
+    - assets/images/imageDef2.png
+    - assets/images/imageDef3.png
+    - assets/images/imageMRI1.png
+    - assets/images/imageMRI2.png
+    - assets/images/imageMRI3.png
+    - assets/images/imageSurg1.png
+    - assets/images/imageSurg2.png
+    - assets/images/imageSurg3.png
+    - assets/images/doctorProfile.png
+
+  
+#   An image asset can refer to one or more resolution-specific "variants", see
+#   https://flutter.dev/assets-and-images/#resolution-aware.
+#  To add custom fonts to your application, add a fonts section here,
+#  in this "flutter" section. Each entry in this list should have a
+#  "family" key with the font family name, and a "fonts" key with a
+#  list giving the asset and other descriptors for the font.
+#  For example:
+#  fonts:
+#    - family: Schyler
+#      fonts:
+#        - asset: fonts/Schyler-Regular.ttf
+#        - asset: fonts/Schyler-Italic.ttf
+#          style: italic
+#    - family: Trajan Pro
+ 
