@@ -13,6 +13,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.3.2
   badges: ^3.1.2
+  
 
 
 dev_dependencies:
@@ -22,6 +23,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter_24pt-Regular.ttf
+        - asset: assets/fonts/Inter_24pt-Bold.ttf
+          weight: 700
 
   assets:
     - assets/images/intro_BackGround.png
@@ -59,20 +67,3 @@ flutter:
     - assets/images/imageSurg2.png
     - assets/images/imageSurg3.png
     - assets/images/doctorProfile.png
-
-  
-#   An image asset can refer to one or more resolution-specific "variants", see
-#   https://flutter.dev/assets-and-images/#resolution-aware.
-#  To add custom fonts to your application, add a fonts section here,
-#  in this "flutter" section. Each entry in this list should have a
-#  "family" key with the font family name, and a "fonts" key with a
-#  list giving the asset and other descriptors for the font.
-#  For example:
-#  fonts:
-#    - family: Schyler
-#      fonts:
-#        - asset: fonts/Schyler-Regular.ttf
-#        - asset: fonts/Schyler-Italic.ttf
-#          style: italic
-#    - family: Trajan Pro
- 

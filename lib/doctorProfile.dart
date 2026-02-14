@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:medconnect_app/customRequest.dart';
+import 'package:medconnect_app/myCustomRequests.dart';
+import 'package:medconnect_app/core/app_colorDoctor.dart';
+import 'package:medconnect_app/homeScreen.dart';
 
-
-
-
-
-  @override
+ 
+ @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Inter',
-        scaffoldBackgroundColor: AppColors.white70,
+        scaffoldBackgroundColor: AppColors.bgLight,
         useMaterial3: true,
       ),
       home: const doctorProfilePage(),
@@ -18,15 +19,7 @@ import 'package:flutter/material.dart';
   }
 
 // ================= COLORS =================
-class AppColors {
-  static const primary = Color(0xFF005A9C);
-  static const secondary = Color(0xFF4DBAC0);
-  static const bgLight = Color(0xFFF5F7FA);
-  static const textPrimary = Color(0xFF212529);
-  static const textSecondary = Color(0xFF6C757D);
-  static const accent = Color(0xFFFF6B6B);
-  static const white70 = Color(0xB3FFFFFF);
-}
+
 
 // ================= SCREEN =================
 class doctorProfilePage extends StatelessWidget {
@@ -45,7 +38,7 @@ class doctorProfilePage extends StatelessWidget {
             DiscountsSection(),
             SavedListsTile(),
             OldChatsSection(),
-            CustomRequestsSection(),
+            CustomRequestsSection(requestType: "", selectedType: "",),
           ],
         ),
       ),
@@ -70,7 +63,12 @@ class DashboardHeader extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.arrow_back, size: 30),
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HomeScreen(),
+                    ),
+                  );
                 },
               ),
               CircleAvatar(
@@ -318,31 +316,75 @@ class OldChatsSection extends StatelessWidget {
 
 // ================= CUSTOM REQUESTS =================
 class CustomRequestsSection extends StatelessWidget {
-  const CustomRequestsSection({super.key});
+    final String requestType;
+    final String selectedType;
+
+  const CustomRequestsSection({super.key, required this.requestType,required this.selectedType});
+
 
   void showCustomRequestOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _optionItem(title: "Rent devices", onTap: () {}),
-              const SizedBox(height: 12),
-              _optionItem(title: "Tools", onTap: () {}),
-              const SizedBox(height: 12),
-              _optionItem(title: "Buy devices", onTap: () {}),
-            ],
-          ),
-        );
-      },
-    );
-  }
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _optionItem(
+              title: "Rent devices",
+              onTap: () {
+                Navigator.pop(ctx); // اقفل الـ bottom sheet
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CustomRequestScreen(
+                      requestType: "Rent devices",
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _optionItem(
+              title: "Tools",
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CustomRequestScreen(
+                      requestType: "Tools",
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _optionItem(
+              title: "Buy devices",
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CustomRequestScreen(
+                      requestType: "Buy devices",
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 
   Widget _optionItem({
     required String title,
@@ -377,7 +419,6 @@ class CustomRequestsSection extends StatelessWidget {
     );
   }
 
- 
 
   @override
   Widget build(BuildContext context) {
@@ -393,6 +434,14 @@ class CustomRequestsSection extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             subtitle: const Text("3 quotes received"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MyCustomRequestsPage(),
+                ),
+              );
+            },
             trailing: const Text(
               "Manage",
               style: TextStyle(
@@ -419,10 +468,25 @@ class CustomRequestsSection extends StatelessWidget {
               elevation: 0,
             ),
             onPressed: () {
-              showCustomRequestOptions(context);
+           showCustomRequestOptions(context);
+          if (selectedType.isNotEmpty) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CustomRequestScreen(requestType: selectedType),
+
+                ),
+
+              );
+            };
             },
             icon: const Icon(Icons.add),
-            label: const Text("Make A New Custom Request"),
+            label: const Text("Make A New Custom Request",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                )),
           ),
         ),
       ],

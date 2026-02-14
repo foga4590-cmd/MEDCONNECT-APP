@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:medconnect_app/core/app_color.dart';
+import 'package:medconnect_app/core/app_colorSupplier.dart';
 import 'package:medconnect_app/models/supplier_product.dart';
 
 class SupplierProfileScreen extends StatelessWidget {

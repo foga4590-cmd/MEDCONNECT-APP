@@ -4,6 +4,8 @@ import 'package:medconnect_app/wishList.dart';
 import 'package:medconnect_app/productDetails.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/doctorProfile.dart';
+import 'package:medconnect_app/introScreen.dart';
+
 // ---------------------
 // نموذج المنتج
 // ---------------------
@@ -167,10 +169,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
+      
 
      appBar: AppBar(
   backgroundColor: Colors.white,
   elevation: 0,
+  leading: IconButton(
+    icon: const Icon(Icons.arrow_back_ios_new),
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const IntroScreen(),
+        ),
+      );
+    },
+  ),
   title: SizedBox(
     height: 40,
     child: Image.asset("assets/images/logoPNG.png", fit: BoxFit.contain),
