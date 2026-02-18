@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+//import 'package:medconnect_app/acceptedSupplier.dart';
 import 'package:medconnect_app/customRequest.dart';
+import 'package:medconnect_app/mainScreen.dart';
+import 'package:medconnect_app/massegesScreen.dart';
 import 'package:medconnect_app/myCustomRequests.dart';
 import 'package:medconnect_app/core/app_colorDoctor.dart';
-import 'package:medconnect_app/homeScreen.dart';
+//import 'package:medconnect_app/homeScreen.dart';
 
  
  @override
@@ -28,7 +31,7 @@ class doctorProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      bottomNavigationBar: const BottomNavBar(),
+     // bottomNavigationBar: const BottomNavBar(),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.only(bottom: 120),
@@ -66,7 +69,7 @@ class DashboardHeader extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const HomeScreen(),
+                      builder: (context) => const MainScreen(),
                     ),
                   );
                 },
@@ -303,13 +306,51 @@ class OldChatsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return sectionCard(
       title: "Old Chats with Vendors",
-      child: ListTile(
+      child: Column(
+        children: [
+          ListTile(
+        
         leading: const Icon(Icons.forum),
         title: const Text("Medtronic Rep",
             style: TextStyle(fontWeight: FontWeight.w600)),
         subtitle: const Text("Re: Anesthesia Machine"),
         trailing: const Text("2d ago"),
+        
       ),
+      const SizedBox(height: 12),
+
+          // 🔵 View All chats Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              onPressed: () {
+                 Navigator.push(context, MaterialPageRoute(
+                   builder: (_) => MessagesScreen(),
+                 ));
+              },
+              child: const Text(
+                "View All Chats",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+
+        ],
+
+      ) 
     );
   }
 }
@@ -495,24 +536,24 @@ class CustomRequestsSection extends StatelessWidget {
 }
 
 // ================= BOTTOM NAV =================
-class BottomNavBar extends StatelessWidget {
-  const BottomNavBar({super.key});
+// class BottomNavBar extends StatelessWidget {
+//   const BottomNavBar({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: AppColors.textSecondary,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-        BottomNavigationBarItem(icon: Icon(Icons.receipt), label: "Orders"),
-        BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Messages"),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-      ],
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return BottomNavigationBar(
+//       currentIndex: 0,
+//       selectedItemColor: AppColors.primary,
+//       unselectedItemColor: AppColors.textSecondary,
+//       items: const [
+//         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+//         BottomNavigationBarItem(icon: Icon(Icons.receipt), label: "Orders"),
+//         BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Messages"),
+//         BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+//       ],
+//     );
+//   }
+//}
 
 // ================= HELPERS =================
 Widget sectionTitle(String text) => Padding(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:medconnect_app/homeScreen.dart';
+//import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/mainScreen.dart';
 import 'package:medconnect_app/signupScreen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -206,7 +207,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => HomeScreen()),
+                                builder: (_) => MainScreen()),
                           );
                         },
                         child: const Text(
