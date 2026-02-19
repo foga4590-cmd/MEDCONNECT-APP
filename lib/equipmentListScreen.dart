@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/mainScreen.dart';
-import 'homeScreen.dart';
+//import 'package:medconnect_app/mainScreen.dart';
+//import 'homeScreen.dart';
 
 //import 'homeScreen.dart'; // عشان نقدر نرجع على HomeScreen ونشغل search
 
@@ -141,11 +142,12 @@ class _EquipmentListsScreenState extends State<EquipmentListsScreen> {
         leading: IconButton(
     icon: const Icon(Icons.arrow_back_ios_new),
     onPressed: () {  //new modification 
-       if (widget.onSearchRequested != null) {
-        widget.onSearchRequested!(''); // نروح للهوم من غير بحث
-      } else {
-        Navigator.pop(context); // fallback
-      }
+       Navigator.push(
+        context,
+        MaterialPageRoute(
+         builder: (context) => const MainScreen(),
+        ),
+      );
     },
   ),
       ),
@@ -228,11 +230,10 @@ trailing: Row(
                               if (!item.inStock)
                                 TextButton(
                                   onPressed: () {
-                                        if (widget.onSearchRequested != null) {
-      widget.onSearchRequested!(item.name);
-    }
+                                    
+                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>const MainScreen()), (Route)=>false);
                                    },
-                                //  onPressed: () => goToSearch(item.name),
+                               
                                   child: const Text("Search Again"),
                                 ),
                                 

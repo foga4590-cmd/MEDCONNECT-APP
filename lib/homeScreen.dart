@@ -121,15 +121,14 @@ List<Map<String, dynamic >> wishListGlobal = [];
 // ---------------------
 
 
-typedef void SearchCallback(String query);
+
 // دالة البحث مستقلة
 class HomeScreen extends StatefulWidget {
- final SearchCallback? onSearchRequested; // ⭐️ الخاصية الجديدة
-  final initialSearch;
+ // ⭐️ الخاصية الجديدة
+  
   const HomeScreen({
-    super.key, 
-    this.onSearchRequested, // ⭐️ نخليها optional عشان لو استخدمناه مكان تاني ما يبوظش
-    this.initialSearch='',
+    super.key
+   
   });
 
   @override
@@ -137,48 +136,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final TextEditingController _searchController;
+ final TextEditingController _searchController=TextEditingController();
   List<Product> displayedProducts = List.from(allProducts);
 
+
+
   // البحث
-@override
-  void initState() {
-    super.initState();
 
-    _searchController=TextEditingController();
-
-if(widget.initialSearch.isNotEmpty){
-  _searchController.text=widget.initialSearch;
-  _searchProduct(widget.initialSearch);
-}
-
-    // ⭐️ نضيف listener للـ controller عشان لو اتغير من بره يتفاعل
-    _searchController.addListener(() {
-      _searchProduct(_searchController.text);
-    });
-  }
- void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-   @override
-  void didUpdateWidget(HomeScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.initialSearch != oldWidget.initialSearch && 
-        widget.initialSearch.isNotEmpty) {
-      _searchController.text = widget.initialSearch;
-      _searchProduct(widget.initialSearch);
-    }
-  }
- void searchFromOutside(String query) {
-    if (query.isNotEmpty) {
-      _searchController.text = query; // نحط الكلمة في السيرش
-      // الـ listener هيشتغل تلقائي ويعمل _searchProduct
-      
-      // لو عايزين نتأكد إن البحث اشتغل على طول
-      _searchProduct(query);
-    }
-  }
+//  void dispose() {
+//     _searchController.dispose();
+//     super.dispose();
+//   }
+ 
   void _searchProduct(String query) {
     setState(() {
       if (query.isEmpty) {

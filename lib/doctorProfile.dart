@@ -304,53 +304,62 @@ class OldChatsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return sectionCard(
-      title: "Old Chats with Vendors",
-      child: Column(
-        children: [
-          ListTile(
-        
-        leading: const Icon(Icons.forum),
-        title: const Text("Medtronic Rep",
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: const Text("Re: Anesthesia Machine"),
-        trailing: const Text("2d ago"),
-        
-      ),
-      const SizedBox(height: 12),
-
-          // 🔵 View All chats Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              onPressed: () {
-                 Navigator.push(context, MaterialPageRoute(
-                   builder: (_) => MessagesScreen(),
-                 ));
-              },
-              child: const Text(
-                "View All Chats",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+    return Column(
+      children: [
+        sectionCard(
+          title: "Old Chats with Vendors",
+          child: Column(
+            children: [
+              ListTile(
+            
+            leading: const Icon(Icons.forum),
+            title: const Text("Medtronic Rep",
+                style: TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: const Text("Re: Anesthesia Machine"),
+            trailing: const Text("2d ago"),
+            
           ),
-
-        ],
-
-      ) 
+          const SizedBox(height: 8),
+            ]
+          ),
+        ),
+              // 🔵 View All chats Button
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
+                       Navigator.push(context, MaterialPageRoute(
+                         builder: (_) => MessagesScreen(),
+                       ));
+                    },
+                    child: const Text(
+                      "View All Chats",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+        
+            ],
+        
+           
+        
+      
     );
   }
 }
