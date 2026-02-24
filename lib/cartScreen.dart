@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/checkoutAddress.dart';
+import 'package:medconnect_app/mainScreen.dart';
 
 class CartItem {
   final String name;
@@ -31,21 +32,21 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> {
   int selectedCartTab = 0; // 0 = Purchase | 1 = Rental
 
-  int _selectedIndex = 1;
+  //int _selectedIndex = 1;
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-      if (index == 0) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
-      } else if (index == 2) {
-        Navigator.pushReplacementNamed(context, '/wishlist');
-      }
-    });
-  }
+  // void _onItemTapped(int index) {
+  //   setState(() {
+  //     _selectedIndex = index;
+  //     if (index == 0) {
+  //       Navigator.pushReplacement(
+  //         context,
+  //         MaterialPageRoute(builder: (_) => const HomeScreen()),
+  //       );
+  //     } else if (index == 2) {
+  //       Navigator.pushReplacementNamed(context, '/wishlist');
+  //     }
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -62,9 +63,22 @@ class _CartPageState extends State<CartPage> {
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        leading: IconButton(
+    icon: const Icon(Icons.arrow_back_ios_new),
+    onPressed: () {  //new modification 
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+         builder: (context) => const MainScreen(),
+        ),
+      );
+    },
+  ),
+        
         title: const Text(
           'My Cart',
           style: TextStyle(fontWeight: FontWeight.bold),
+          
         ),
       ),
       backgroundColor: const Color(0xFFF4F4F4),
@@ -96,31 +110,31 @@ class _CartPageState extends State<CartPage> {
 
                   
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF0A69C3),
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            label: 'Cart',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: 'Wishlist',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_none),
-            label: 'Alerts',
-          ),
-        ],
-      ),
+      // bottomNavigationBar: BottomNavigationBar(
+      //   currentIndex: _selectedIndex,
+      //   onTap: _onItemTapped,
+      //   type: BottomNavigationBarType.fixed,
+      //   selectedItemColor: const Color(0xFF0A69C3),
+      //   unselectedItemColor: Colors.grey,
+      //   items: const [
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.home_outlined),
+      //       label: 'Home',
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.shopping_cart_outlined),
+      //       label: 'Cart',
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.favorite_border),
+      //       label: 'Wishlist',
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.notifications_none),
+      //       label: 'Equipment list',
+      //     ),
+      //   ],
+      // ),
 
       bottomSheet: Padding(
         padding: const EdgeInsets.all(16),

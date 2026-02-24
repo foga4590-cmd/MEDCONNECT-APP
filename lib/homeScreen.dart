@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
+//import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/wishList.dart';
 import 'package:medconnect_app/productDetails.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/doctorProfile.dart';
-import 'package:medconnect_app/introScreen.dart';
+//import 'package:medconnect_app/introScreen.dart';
+import 'package:medconnect_app/equipmentListScreen.dart';
 
 // ---------------------
 // نموذج المنتج
@@ -117,18 +119,35 @@ List<Map<String, dynamic >> wishListGlobal = [];
 // ---------------------
 // HomeScreen
 // ---------------------
+
+
+
+// دالة البحث مستقلة
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+ // ⭐️ الخاصية الجديدة
+  
+  const HomeScreen({
+    super.key
+   
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _searchController = TextEditingController();
+ final TextEditingController _searchController=TextEditingController();
   List<Product> displayedProducts = List.from(allProducts);
 
+
+
   // البحث
+
+//  void dispose() {
+//     _searchController.dispose();
+//     super.dispose();
+//   }
+ 
   void _searchProduct(String query) {
     setState(() {
       if (query.isEmpty) {
@@ -145,26 +164,48 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  int _selectedIndex = 0;
+  //int _selectedIndex = 0;
 
-  void _onItemTapped(int index) {
-    if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const CartPage()),
-      );
-    } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const WishlistPage()),
-      );
-    }
+  // void _onItemTapped(int index) {
+  //   // if (index == 0) {
+  //   //   Navigator.push(
+  //   //     context,
+  //   //     MaterialPageRoute(builder: (_) => const HomeScreen()),
+  //   //   );
+  //   // }else 
+  //   if (index == 1) {
+  //     Navigator.push(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => const CartPage()),
+  //     );
+  //   } else if (index == 2) {
+  //     Navigator.push(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => const WishlistPage()),
+  //     );
+  //   } else if(index ==3){ //new modification
+  //     openEquipmentLists();
+      
 
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  //   }
 
+  //   setState(() {
+  //     _selectedIndex = index;
+  //   });
+  // }
+// void openEquipmentLists() async {
+//   final result = await Navigator.push(
+//     context,
+//     MaterialPageRoute(
+//       builder: (_) => const EquipmentListsScreen(),
+//     ),
+//   );
+
+//   if (result != null && result is String) {
+//     _searchController.text = result; // يحط الاسم في السيرش
+//     _searchProduct(result);          // يشغل البحث تلقائي
+//   }
+// }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -176,13 +217,13 @@ class _HomeScreenState extends State<HomeScreen> {
   elevation: 0,
   leading: IconButton(
     icon: const Icon(Icons.arrow_back_ios_new),
-    onPressed: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const IntroScreen(),
-        ),
-      );
+    onPressed: () {  //new modification 
+      // Navigator.push(
+      //   context,
+      //   MaterialPageRoute(
+      //   //  builder: (context) => const IntroScreen(),
+      //   ),
+      // );
     },
   ),
   title: SizedBox(
@@ -222,28 +263,28 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: const Color(0xFF0A69C3),
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            label: "Cart",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: "Wishlist",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: "Alerts",
-          ),
-        ],
-      ),
+      // bottomNavigationBar: BottomNavigationBar(
+      //   currentIndex: _selectedIndex,
+      //   onTap: _onItemTapped,
+      //   selectedItemColor: const Color(0xFF0A69C3),
+      //   unselectedItemColor: Colors.grey,
+      //   type: BottomNavigationBarType.fixed,
+      //   items: const [
+      //     BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.shopping_cart_outlined),
+      //       label: "Cart",
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.favorite_border),
+      //       label: "Wishlist",
+      //     ),
+      //     BottomNavigationBarItem(
+      //       icon: Icon(Icons.notifications),
+      //       label: "equipmentlist",
+      //     ),
+      //   ],
+      // ),
     );
   }
 
@@ -627,8 +668,12 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
+
+
+
+
+
+
+
 }
-
-
-
 
