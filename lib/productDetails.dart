@@ -289,6 +289,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             setState(() {
               if (isStart) {
                 rentStartDate = picked;
+
               } else {
                 rentEndDate = picked;
               }
@@ -605,12 +606,15 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     onPressed: () {
       cartItemsGlobal.add(
         CartItem(
+
           name: widget.product.name,
           image: widget.product.imagePath,
           quantity: 1,
           price: widget.product.price,
           type: selectedPurchase == 0 ? "rent" : "buy", // ✅ مهم
+          daily_rent:50,
           dateRange: selectedPurchase == 0 ? "3 Days" : "",
+        
         ),
       );
     },

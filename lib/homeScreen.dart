@@ -564,6 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               cartItemsGlobal.add(
                 CartItem(
+                  daily_rent:0,
                   name: p.name,
                   image: p.imagePath,
                   quantity: 1,
@@ -601,9 +602,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   name: p.name,
                   image: p.imagePath,
                   quantity: 1,
-                  price: p.price,
+                  price: 0,
                   type: 'rent',
-                  dateRange: '3 Days Rent',
+                  dateRange: '',
+                  daily_rent:50,
                 ),
               );
 

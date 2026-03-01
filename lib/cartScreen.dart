@@ -10,6 +10,9 @@ class CartItem {
   final double price;
 
   String? dateRange;
+  final double daily_rent;
+  DateTime? rStartDate;
+  DateTime? rEndDate;
 
   String type;
   CartItem({
@@ -19,6 +22,7 @@ class CartItem {
     required this.price,
     required this.dateRange,
     required this.type,
+    required this.daily_rent,
   });
 }
 
@@ -184,6 +188,8 @@ class _CartPageState extends State<CartPage> {
   }
 
   // ================= CART ITEM =================
+  DateTime? rentStartDate;
+  DateTime? rentEndDate;
 
   Widget buildCartItem({required CartItem item, required int index}) {
     final isRent = item.type == 'rent';
@@ -203,35 +209,39 @@ class _CartPageState extends State<CartPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.name,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    // IconButton(
-                    //   icon: const Icon(Icons.delete_outline),
-                    //   onPressed: () {
-                    //     setState(() {
-                    //       cartItemsGlobal.removeAt(index);
-                    //     });
-                    //   },
-                    // ),
-                  ],
+                Text(
+                  item.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
 
-                Text(
-                  '\$${item.price.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                if (!isRent)
+                  Text(
+                    '\$${item.price.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
 
                 const SizedBox(height: 4),
 
+                if (isRent)
+                  Text(
+                    "\$${item.daily_rent.toString()} / day",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+
+                const SizedBox(height: 4),
+                if (isRent)
+                  Column(
+                    children: [
+                      _dateBox("Start Date", true),
+
+                      const SizedBox(height: 10),
+                      _dateBox("End Date", false),
+                    ],
+                  ),
+                const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -253,74 +263,66 @@ class _CartPageState extends State<CartPage> {
                     ),
                   ),
                 ),
-
-                if (isRent) ...[
-                    const SizedBox(height: 4),
-                  Text(
-                    item.dateRange ?? '',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                  ),
-                
-                ],
               ],
             ),
           ),
-        
-             Expanded(
-              
-               child: Column(
-                crossAxisAlignment :CrossAxisAlignment.end,
-                children: [
-                         if (isRent) ...[
-                           Row(
-                            mainAxisSize: MainAxisSize.min,
-                children: [
-                  _qtyButton(Icons.add, () {
-                    setState(() => item.quantity++);
-                  }),
-                  Padding(padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('${item.quantity}'),),
-                  
-                  _qtyButton(Icons.remove, () {
-                    if (item.quantity > 1) {
-                      setState(() => item.quantity--);
-                    }
-                  }),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (isRent) ...[
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _qtyButton(Icons.add, () {
+                        setState(() => item.quantity++);
+                      }),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('${item.quantity}'),
+                      ),
+
+                      _qtyButton(Icons.remove, () {
+                        if (item.quantity > 1) {
+                          setState(() => item.quantity--);
+                        }
+                      }),
+                    ],
+                  ),
                 ],
-                           ),
-                         ],
-                         if (!isRent)
-                           Row(
-                             mainAxisSize: MainAxisSize.min,
-                children: [
-                  _qtyButton(Icons.add, () {
-                    setState(() => item.quantity++);
-                  }),
-                  Padding(padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('${item.quantity}'),),
-                  _qtyButton(Icons.remove, () {
-                    if (item.quantity > 1) {
-                      setState(() => item.quantity--);
-                    }
-                  }),
-                ],
-                           ),
-                           IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () {
-                        setState(() {
-                          cartItemsGlobal.removeAt(index);
-                        });
-                      },
-                    ),
-                       ],
-                     ),
-             ),
-        ]
-      
-      )
+                if (!isRent)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _qtyButton(Icons.add, () {
+                        setState(() => item.quantity++);
+                      }),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('${item.quantity}'),
+                      ),
+                      _qtyButton(Icons.remove, () {
+                        if (item.quantity > 1) {
+                          setState(() => item.quantity--);
+                        }
+                      }),
+                    ],
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () {
+                    setState(() {
+                      cartItemsGlobal.removeAt(index);
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
-    
   }
 
   Widget _productImage(String path) {
@@ -409,4 +411,46 @@ class _CartPageState extends State<CartPage> {
       ],
     );
   }
+
+  Widget _dateBox(String title, bool isStart) => GestureDetector(
+    onTap: () async {
+      final picked = await showDatePicker(
+        context: context,
+        firstDate: DateTime.now(),
+        lastDate: DateTime(2030),
+        initialDate: DateTime.now(),
+      );
+      if (picked != null) {
+        setState(() {
+          if (isStart) {
+            rentStartDate = picked;
+          } else {
+            rentEndDate = picked;
+          }
+        });
+      }
+    },
+    child: Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.calendar_month, size: 15),
+          const SizedBox(width: 8),
+          Text(
+            isStart
+                ? (rentStartDate == null
+                      ? title
+                      : rentStartDate!.toString().split(" ")[0])
+                : (rentEndDate == null
+                      ? title
+                      : rentEndDate!.toString().split(" ")[0]),
+          ),
+        ],
+      ),
+    ),
+  );
 }
