@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:medconnect_app/homeScreen.dart';
+//import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/mainScreen.dart';
 import 'package:medconnect_app/signupScreen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -30,7 +31,7 @@ class _SignInScreenState extends State<SignInScreen> {
       body: Column(
         children: [
           Container(
-            height: 140,
+            height: 100,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -51,7 +52,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     const SizedBox(width: 8),
                     Image.asset("assets/images/logoPNG.png",
-                        color: Colors.white, fit: BoxFit.cover, height: 40),
+                        color: Colors.white, fit: BoxFit.contain, height: 25),
                     const Spacer(),
                   ],
                 ),
@@ -112,7 +113,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white,
-                        hintText: 'Email Or Phone Number',
+                        hintText: 'Email',
                         hintStyle: const TextStyle(color: Colors.grey),
                         contentPadding: const EdgeInsets.symmetric(
                             vertical: 22, horizontal: 28),
@@ -206,7 +207,7 @@ class _SignInScreenState extends State<SignInScreen> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => HomeScreen()),
+                                builder: (_) => MainScreen()),
                           );
                         },
                         child: const Text(

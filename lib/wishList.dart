@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/mainScreen.dart';
 
 
 
@@ -26,6 +27,17 @@ class _WishlistPageState extends State<WishlistPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+    icon: const Icon(Icons.arrow_back_ios_new),
+    onPressed: () {  //new modification 
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+         builder: (context) => const MainScreen(),
+        ),
+      );
+    },
+  ),
         title: const Text(
           "Wishlist",
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -48,39 +60,45 @@ class _WishlistPageState extends State<WishlistPage> {
               },
             ),
 
-      bottomNavigationBar: NavigationBar(
-        indicatorColor: Colors.transparent,
-        selectedIndex: 2,
-        onDestinationSelected: (index) {
-          if (index == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const HomeScreen()),
-            );
-          } else if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const CartPage()),
-            );
-          }
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: "Home"),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_cart_outlined),
-            label: "Cart",
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.favorite_border),
-            selectedIcon: Icon(Icons.favorite, color: Color(0xFF0A69C3)),
-            label: "Wishlist",
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.notifications_outlined),
-            label: "Alerts",
-          ),
-        ],
-      ),
+      // bottomNavigationBar: NavigationBar(
+      //   indicatorColor: Colors.transparent,
+      //   selectedIndex: 2,
+      //   onDestinationSelected: (index) {
+      //     if (index == 0) {
+      //       Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(builder: (_) => const HomeScreen()),
+      //       );
+      //     } else if (index == 1) {
+      //       Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(builder: (_) => const CartPage()),
+      //       );
+      //     }else if (index == 3) {
+      //       Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(builder: (_) => const EquipmentListsScreen()),
+      //       );
+
+      //     }
+      //   },
+      //   destinations: const [
+      //     NavigationDestination(icon: Icon(Icons.home_outlined), label: "Home"),
+      //     NavigationDestination(
+      //       icon: Icon(Icons.shopping_cart_outlined),
+      //       label: "Cart",
+      //     ),
+      //     NavigationDestination(
+      //       icon: Icon(Icons.favorite_border),
+      //       selectedIcon: Icon(Icons.favorite, color: Color(0xFF0A69C3)),
+      //       label: "Wishlist",
+      //     ),
+      //     NavigationDestination(
+      //       icon: Icon(Icons.notifications_outlined),
+      //       label: "equipment list",
+      //     ),
+      //   ],
+      // ),
     );
   }
 

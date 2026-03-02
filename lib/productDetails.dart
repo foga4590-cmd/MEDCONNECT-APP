@@ -602,18 +602,47 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       backgroundColor:
           selectedPurchase == 0 ? Colors.blue : Colors.blue,
     ),
-    onPressed: () {
-      cartItemsGlobal.add(
-        CartItem(
-          name: widget.product.name,
-          image: widget.product.imagePath,
-          quantity: 1,
-          price: widget.product.price,
-          type: selectedPurchase == 0 ? "rent" : "buy", // ✅ مهم
-          dateRange: selectedPurchase == 0 ? "3 Days" : "",
-        ),
-      );
-    },
+   onPressed: () {
+  cartItemsGlobal.add(
+    CartItem(
+      name: widget.product.name,
+      image: widget.product.imagePath,
+      quantity: 1,
+      price: widget.product.price,
+      type: selectedPurchase == 0 ? "rent" : "buy",
+      dateRange: selectedPurchase == 0 ? "3 Days" : "",
+    ),
+  );
+
+  // 🟦 SnackBar
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        selectedPurchase == 0
+            ? "Product added for rent 🛒"
+            : "Product added to cart 🛒",
+      ),
+      duration: const Duration(seconds: 2),
+      backgroundColor: Colors.blue,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      action: SnackBarAction(
+      
+        label: "View Cart",
+        textColor: Colors.white,
+        onPressed: () {
+          // روح على صفحة الكارت
+          Navigator.push(context, MaterialPageRoute(builder: (_) => CartPage()));
+        },
+          // روح على صفحة الكارت
+          // Navigator.push(context, MaterialPageRoute(builder: (_) => CartScreen()));
+        
+      ),
+    ),
+  );
+},
     child: Text(
       selectedPurchase == 0 ? "Rent Now" : "Add To Cart",
       style: const TextStyle(
