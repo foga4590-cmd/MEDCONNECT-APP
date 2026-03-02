@@ -3,9 +3,12 @@ import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/checkoutSummary.dart';
 
 class CheckoutAddressPage extends StatefulWidget {
-   
+   final List<CartItem> cartItems;
 
-  const CheckoutAddressPage({super.key});
+
+  const CheckoutAddressPage({super.key
+  , required this.cartItems,
+  });
 
   @override
   State<CheckoutAddressPage> createState() => _CheckoutAddressPageState();
@@ -95,8 +98,8 @@ class _CheckoutAddressPageState extends State<CheckoutAddressPage> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => CheckoutSummaryPage(
-                        cartItems: const [],
-                        subtotal: 0.0,
+                        cartItems: widget.cartItems,
+                        subtotal: widget.cartItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
                         taxes: 0.0,
                         total: 0.0,
                         selectedAddress: addresses[selectedAddress],

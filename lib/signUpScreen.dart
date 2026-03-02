@@ -14,10 +14,68 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final selectedGovernorateController = TextEditingController();
+  void _showGovernorateSheet() {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) {
+      return ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: egyptGovernorates.length,
+        separatorBuilder: (_, __) => const Divider(),
+        itemBuilder: (context, index) {
+          return ListTile(
+            title: Text(egyptGovernorates[index]),
+            onTap: () {
+              setState(() {
+                selectedGovernorate = egyptGovernorates[index];
+              });
+              Navigator.pop(context);
+            },
+          );
+        },
+      );
+    },
+  );
+}
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  String? _selectedAuthority;
+  String? selectedGovernorate;
+
+final List<String> egyptGovernorates = [
+  'Cairo',
+  'Giza',
+  'Alexandria',
+  'Dakahlia',
+  'Red Sea',
+  'Beheira',
+  'Fayoum',
+  'Gharbia',
+  'Ismailia',
+  'Menofia',
+  'Minya',
+  'Qaliubiya',
+  'New Valley',
+  'Suez',
+  'Aswan',
+  'Assiut',
+  'Beni Suef',
+  'Port Said',
+  'Damietta',
+  'Sharkia',
+  'South Sinai',
+  'Kafr El Sheikh',
+  'Matrouh',
+  'Luxor',
+  'Qena',
+  'North Sinai',
+  'Sohag',
+];
+
 
   @override
   void dispose() {
@@ -33,7 +91,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       body: Column(
         children: [
           Container(
-            height: 140,
+            height: 100,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -54,7 +112,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       onPressed: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 8),
-                     Image.asset("assets/images/logoPNG.png", color: Colors.white, fit: BoxFit.cover, height: 40),
+                     Image.asset("assets/images/logoPNG.png", color: Colors.white, fit: BoxFit.contain, height: 25),
                     const Spacer(),
                   ],
                 ),
@@ -124,6 +182,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const SizedBox(height: 32),
                     const Text('Account Information', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
+                    _buildTextField(
+                   label: 'Governorate',
+                   readOnly: true,
+                   hintText: '$selectedGovernorate',
+                  suffixIcon: const Icon(Icons.arrow_drop_down),
+                  validator: (v) => selectedGovernorate == null ? 'Required' : null,
+                  onTap: () => _showGovernorateSheet(),
+                  ),
 
                     _buildTextField(
                       label: 'Email',
@@ -177,25 +243,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     ),
 
-                    _buildTextField(
-                      label: 'Issuing Authority',
-                      readOnly: true,
-                      hintText: _selectedAuthority ?? 'Select Authority',
-                      suffixIcon: const Icon(Icons.arrow_drop_down),
-                      onTap: () async {
-                        final selected = await showDialog<String>(
-                          context: context,
-                          builder: (_) => SimpleDialog(
-                            title: const Text('Issuing Authority'),
-                            children: [
-                              SimpleDialogOption(child: const Text('Ministry of health'), onPressed: () => Navigator.pop(context, 'ministry of health')),
-                              SimpleDialogOption(child: const Text('Doctors syndicate'), onPressed: () => Navigator.pop(context, 'doctors syndicate')),
-                            ],
-                          ),
-                        );
-                        if (selected != null) setState(() => _selectedAuthority = selected);
-                      },
-                    ),
+                   
 
                     const SizedBox(height: 40),
                     SizedBox(

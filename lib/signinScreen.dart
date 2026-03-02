@@ -31,7 +31,7 @@ class _SignInScreenState extends State<SignInScreen> {
       body: Column(
         children: [
           Container(
-            height: 140,
+            height: 100,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -52,7 +52,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     const SizedBox(width: 8),
                     Image.asset("assets/images/logoPNG.png",
-                        color: Colors.white, fit: BoxFit.cover, height: 40),
+                        color: Colors.white, fit: BoxFit.contain, height: 25),
                     const Spacer(),
                   ],
                 ),

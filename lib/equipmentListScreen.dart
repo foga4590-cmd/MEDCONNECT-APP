@@ -71,6 +71,7 @@ class _EquipmentListsScreenState extends State<EquipmentListsScreen> {
     ),
   ];
 
+
   void addAllToCart(EquipmentListModel list) {
     for (var item in list.items) {
       if (item.inStock) {
@@ -134,6 +135,7 @@ class _EquipmentListsScreenState extends State<EquipmentListsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      
       floatingActionButton: FloatingActionButton(
         onPressed: addNewList,
         child: const Icon(Icons.add),

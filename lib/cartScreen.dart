@@ -109,36 +109,18 @@ class _CartPageState extends State<CartPage> {
                 ],
               ),
             ),
-      bottomSheet: cartItemsGlobal.isEmpty
-          ? null
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                height: 50,
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0A69C3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => CheckoutAddressPage()),
-                    );
-                  },
-                  child: Text(
-                    selectedCartTab == 0 ? "pay to buy" : "pay to rent",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CheckoutAddressPage(cartItems: cartItemsGlobal)),
+              );
+            },
+            child: const Text(
+              'Continue To Address',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
     );
