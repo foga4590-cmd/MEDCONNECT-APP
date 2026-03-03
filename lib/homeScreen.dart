@@ -38,7 +38,7 @@ final List<Product> allProducts = [
       "assets/images/imageXray2.png",
       "assets/images/imageXray3.png",
     ],
-  ), 
+  ),
 
   Product(
     name: "UltraSound system",
@@ -64,7 +64,7 @@ final List<Product> allProducts = [
       "assets/images/imageVent2.png",
       "assets/images/imageVent3.png",
     ],
-  ), 
+  ),
 
   Product(
     name: "Defibrillator",
@@ -121,30 +121,27 @@ List<Map<String, dynamic>> equipmentListGlobal = [];
 
 // دالة البحث مستقلة
 class HomeScreen extends StatefulWidget {
- // ⭐️ الخاصية الجديدة
-  
-  const HomeScreen({
-    super.key
-   
-  });
+  // ⭐️ الخاصية الجديدة
+
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
- final TextEditingController _searchController=TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   List<Product> displayedProducts = List.from(allProducts);
 
 
 
   // البحث
 
-//  void dispose() {
-//     _searchController.dispose();
-//     super.dispose();
-//   }
- 
+  //  void dispose() {
+  //     _searchController.dispose();
+  //     super.dispose();
+  //   }
+
   void _searchProduct(String query) {
     setState(() {
       if (query.isEmpty) {
@@ -169,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
   //   //     context,
   //   //     MaterialPageRoute(builder: (_) => const HomeScreen()),
   //   //   );
-  //   // }else 
+  //   // }else
   //   if (index == 1) {
   //     Navigator.push(
   //       context,
@@ -182,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
   //     );
   //   } else if(index ==3){ //new modification
   //     openEquipmentLists();
-      
+
 
   //   }
 
@@ -190,19 +187,19 @@ class _HomeScreenState extends State<HomeScreen> {
   //     _selectedIndex = index;
   //   });
   // }
-// void openEquipmentLists() async {
-//   final result = await Navigator.push(
-//     context,
-//     MaterialPageRoute(
-//       builder: (_) => const EquipmentListsScreen(),
-//     ),
-//   );
+  // void openEquipmentLists() async {
+  //   final result = await Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (_) => const EquipmentListsScreen(),
+  //     ),
+  //   );
 
-//   if (result != null && result is String) {
-//     _searchController.text = result; // يحط الاسم في السيرش
-//     _searchProduct(result);          // يشغل البحث تلقائي
-//   }
-// }
+  //   if (result != null && result is String) {
+  //     _searchController.text = result; // يحط الاسم في السيرش
+  //     _searchProduct(result);          // يشغل البحث تلقائي
+  //   }
+  // }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -238,13 +235,41 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(builder: (_) => const doctorProfilePage()),
         );
 
-        // افتح صفحة البروفايل
-        // Navigator.push(...)
-      },
-    ),
-  ],
-),
 
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        automaticallyImplyLeading: false,
+        title: SizedBox(
+          height: 30,
+          child: Image.asset("assets/images/logoPNG.png", fit: BoxFit.contain),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const doctorProfilePage()),
+              );
+
+              // افتح صفحة البروفايل
+              // Navigator.push(...)
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const IntroScreen()),
+              );
+
+              // افتح صفحة البروفايل
+              // Navigator.push(...)
+            },
+          ),
+        ],
+      ),
 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -313,11 +338,10 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         _buildBanner(),
         const SizedBox(height: 20),
-       _sectionTitle("Categories"),
-      const SizedBox(height: 10),
-      buildCategories(),   // 👈 هنا
-      const SizedBox(height: 20),
-
+        _sectionTitle("Categories"),
+        const SizedBox(height: 10),
+        buildCategories(), // 👈 هنا
+        const SizedBox(height: 20),
 
         _sectionTitle("Featured Products"),
         const SizedBox(height: 10),
@@ -340,20 +364,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
- 
+
   Widget _categoryItem({required String imagepath, required String label}) {
     return Column(
       children: [
         SizedBox.square(
           child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-            ),
-            child: Image.asset(
-              imagepath,
-              width: 40,
-              height: 40,
-            ),
+            decoration: BoxDecoration(color: Colors.white),
+            child: Image.asset(imagepath, width: 40, height: 40),
           ),
         ),
         const SizedBox(height: 8),
@@ -361,25 +379,23 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-   Widget buildCategories() {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      _categoryItem(
-        imagepath: "assets/images/surgical.png",
-        label: "Surgical",
-      ),
-      _categoryItem(
-        imagepath: "assets/images/fly.png",
-        label: "Imaging",
-      ),
-      _categoryItem(
-        imagepath: "assets/images/laboratory.png",
-        label: "Laboratory",
-      ),
-    ],
-  );
-}
+
+  Widget buildCategories() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _categoryItem(
+          imagepath: "assets/images/surgical.png",
+          label: "Surgical",
+        ),
+        _categoryItem(imagepath: "assets/images/fly.png", label: "Imaging"),
+        _categoryItem(
+          imagepath: "assets/images/laboratory.png",
+          label: "Laboratory",
+        ),
+      ],
+    );
+  }
 
   Widget _sectionTitle(String title) {
     return Text(
@@ -412,6 +428,34 @@ class _HomeScreenState extends State<HomeScreen> {
   // PRODUCT CARD
   // ---------------------
   Widget _productCard(Product p) {
+    bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProductDetailsPage(product: p),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    p.imagePath,
+                    height: MediaQuery.of(context).size.height * 0.17,
+                    width: double.infinity,
+                    fit: BoxFit.fill,
   bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
  bool isInequipmentList = equipmentListGlobal.any((i) => i["name"] == p.name);
   return Container(
@@ -431,18 +475,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(
                     builder: (_) => ProductDetailsPage(product: p ),
                   ),
-                );
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  p.imagePath,
-                  height: MediaQuery.of(context).size.height * 0.17,
-                  width: double.infinity,
-                  fit: BoxFit.fill,
                 ),
               ),
-            ),
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -456,7 +490,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -470,7 +503,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 12,
                 ),
               ),
-            ),
 
             Padding(
               padding: const EdgeInsets.symmetric(
@@ -484,13 +516,54 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8.0,
-                vertical: 4,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4,
+                ),
+                child: _buildActionButton(p),
               ),
+            ],
+          ),
+
+          Positioned(
+            right: 10,
+            top: 10,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isInWishlist) {
+                    wishListGlobal.removeWhere((i) => i["name"] == p.name);
+                  } else {
+                    wishListGlobal.add({
+                      "name": p.name,
+                      "price": p.price,
+                      "image": p.imagePath,
+                    });
+                  }
+                });
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isInWishlist
+                          ? "${p.name} removed from wishlist"
+                          : "${p.name} added to wishlist",
+                    ),
+                  ),
+                );
+              },
+              child: Icon(
+                isInWishlist ? Icons.favorite : Icons.favorite_border,
+                color: isInWishlist ? Colors.red : Colors.black,
+                size: 28,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
               child: _buildActionButton(p),
             ),
           ],
@@ -583,105 +656,99 @@ class _HomeScreenState extends State<HomeScreen> {
   // BUTTONS: Add / Rent / Notify Me
   // ---------------------
   Widget _buildActionButton(Product p) {
-  // ⭐ Notify Me فقط
-  if (p.status == "Notify me") {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.amber,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+    // ⭐ Notify Me فقط
+    if (p.status == "Notify me") {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.amber,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("We will notify you when available"),
+              ),
+            );
+          },
+          child: const Text(
+            "Notify Me",
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
         ),
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("We will notify you when available"),
+      );
+    }
+
+    // ⭐ Rent + Add To Cart مع بعض
+    return Row(
+      children: [
+        // ---------- Add To Cart ----------
+        Expanded(
+          flex: 3,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              padding: const EdgeInsets.symmetric(vertical: 14),
             ),
-          );
-        },
-        child: const Text(
-          "Notify Me",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            onPressed: () {
+              cartItemsGlobal.add(
+                CartItem(
+                  daily_rent:0,
+                  name: p.name,
+                  image: p.imagePath,
+                  quantity: 1,
+                  price: p.price,
+                  type: 'buy',
+                  dateRange: '',
+                ),
+              );
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("${p.name} added to cart (Buy)")),
+              );
+            },
+            child: const Text(
+              "Add To Cart",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
         ),
-      ),
+
+        const SizedBox(width: 10),
+
+        // ---------- Rent ----------
+        Expanded(
+          flex: 2,
+
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            onPressed: () {
+              cartItemsGlobal.add(
+                CartItem(
+                  name: p.name,
+                  image: p.imagePath,
+                  quantity: 1,
+                  price: 0,
+                  type: 'rent',
+                  dateRange: '',
+                  daily_rent:50,
+                ),
+              );
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("${p.name} added to cart (Rent)")),
+              );
+            },
+            child: const Text("rent", style: TextStyle(color: Colors.white)),
+          ),
+        ),
+      ],
     );
   }
-
-  // ⭐ Rent + Add To Cart مع بعض
-  return Row(
-  children: [
-    // ---------- Add To Cart ----------
-    Expanded(
-      flex : 3,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blue,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-        ),
-        onPressed: () {
-          cartItemsGlobal.add(
-            CartItem(
-              name: p.name,
-              image: p.imagePath,
-              quantity: 1,
-              price: p.price,
-              type: 'buy',
-              dateRange: '',
-            ),
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("${p.name} added to cart (Buy)"),
-            ),
-          );
-        },
-        child: const Text(
-          "Add To Cart",
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-    ),
-
-    const SizedBox(width: 10),
-
-    // ---------- Rent ----------
-    Expanded(
-            flex : 2,
-
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-        ),
-        onPressed: () {
-          cartItemsGlobal.add(
-            CartItem(
-              name: p.name,
-              image: p.imagePath,
-              quantity: 1,
-              price: p.price,
-              type: 'rent',
-              dateRange: '3 Days Rent',
-            ),
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("${p.name} added to cart (Rent)"),
-            ),
-          );
-        },
-        child: const Text(
-          "rent",
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-    ),
-  ],
-);
-}
-
 
   // ---------------------
   // Search Results
@@ -709,12 +776,4 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-
-
-
-
-
-
-
 }
-
