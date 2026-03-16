@@ -213,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   // 3️⃣ التوجيه لشاشة Intro
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const SignInScreen()),
+                    MaterialPageRoute(builder: (_) => const IntroScreen()),
                     (route) => false,
                   );
 
