@@ -4,13 +4,13 @@ import 'package:medconnect_app/introScreen.dart';
 import 'package:medconnect_app/productDetails.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/doctorProfile.dart';
+import 'package:medconnect_app/services/api_service.dart';
+import 'package:medconnect_app/signInScreen.dart';
 
 
 // ---------------------
 // نموذج المنتج
 // ---------------------
-
-
 
 // ---------------------
 // قائمة المنتجات
@@ -112,14 +112,12 @@ final List<Product> allProducts = [
 // GLOBAL LISTS
 // ---------------------
 List<CartItem> cartItemsGlobal = [];
-List<Map<String, dynamic >> wishListGlobal = [];
+List<Map<String, dynamic>> wishListGlobal = [];
 List<Map<String, dynamic>> equipmentListGlobal = [];
 
 // ---------------------
 // HomeScreen
 // ---------------------
-
-
 
 // دالة البحث مستقلة
 class HomeScreen extends StatefulWidget {
@@ -134,8 +132,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Product> displayedProducts = List.from(allProducts);
-
-
 
   // البحث
 
@@ -166,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
@@ -187,18 +183,62 @@ class _HomeScreenState extends State<HomeScreen> {
               // Navigator.push(...)
             },
           ),
+          /////////////////////////////////new editing for api////////////////////////
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const IntroScreen()),
+            onPressed: () async {
+              // 1️⃣ رسالة تأكيد
+              bool? confirmLogout = await showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text('Log out'),
+                  content: Text('Are you sure you want to log out ?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text('Log out'),
+                    ),
+                  ],
+                ),
               );
 
-              // افتح صفحة البروفايل
-              // Navigator.push(...)
+              if (confirmLogout == true) {
+                // 2️⃣ استدعاء logout من ApiService
+                final result = await ApiService().logout();
+
+                if (result['success']) {
+                  // 3️⃣ التوجيه لشاشة Intro
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const IntroScreen()),
+                    (route) => false,
+                  );
+
+                  // 4️⃣ رسالة نجاح
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result['message'] ?? 'Logged Out'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  // 5️⃣ لو فشل
+                  print("xxxxxxxxxxxxxxxxxxxxxxx");
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(result['error'] ?? 'Something went wrong'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
           ),
+          ///////////////////////////////////////////////////////////////////////
         ],
       ),
 
@@ -215,8 +255,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-
-     
     );
   }
 
@@ -338,217 +376,172 @@ class _HomeScreenState extends State<HomeScreen> {
   // PRODUCT CARD
   // ---------------------
   Widget _productCard(Product p) {
-    
-  bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
- bool isInequipmentList = equipmentListGlobal.any((i) => i["name"] == p.name);
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Stack(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ProductDetailsPage(product: p ),
+    bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
+    bool isInequipmentList = equipmentListGlobal.any(
+      (i) => i["name"] == p.name,
+    );
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProductDetailsPage(product: p),
+                    ),
+                  );
+                },
+                //#####################################################
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    p.imagePath,
+                    height: MediaQuery.of(context).size.height * 0.17,
+                    width: double.infinity,
+                    fit: BoxFit.fill,
                   ),
-                );
-              },
-              //#####################################################
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  p.imagePath,
-                  height: MediaQuery.of(context).size.height * 0.17,
-                  width: double.infinity,
-                  fit: BoxFit.fill,
                 ),
               ),
-              ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8.0,
-                vertical: 4,
-              ),
-              child: Text(
-                p.name,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8.0,
-                vertical: 4,
-              ),
-              child: Text(
-                p.brand,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8.0,
-                vertical: 4,
-              ),
-              child: Text(
-                "\$${p.price}",
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
 
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8.0,
                   vertical: 4,
                 ),
-                //############################################################################################
-    //             child: _buildActionButton(p),
-    //           ),
-    //         ],
-    //       ),
-
-    //       Positioned(
-    //         right: 10,
-    //         top: 10,
-    //         child: GestureDetector(
-    //           onTap: () {
-    //             setState(() {
-    //               if (isInWishlist) {
-    //                 wishListGlobal.removeWhere((i) => i["name"] == p.name);
-    //               } else {
-    //                 wishListGlobal.add({
-    //                   "name": p.name,
-    //                   "price": p.price,
-    //                   "image": p.imagePath,
-    //                 });
-    //               }
-    //             });
-
-    //             ScaffoldMessenger.of(context).showSnackBar(
-    //               SnackBar(
-    //                 content: Text(
-    //                   isInWishlist
-    //                       ? "${p.name} removed from wishlist"
-    //                       : "${p.name} added to wishlist",
-    //                 ),
-    //               ),
-    //             );
-    //           },
-    //           child: Icon(
-    //             isInWishlist ? Icons.favorite : Icons.favorite_border,
-    //             color: isInWishlist ? Colors.red : Colors.black,
-    //             size: 28,
-    //           ),
-    //         ),
-    //       ),
-    //     ],
-    //   ),
-    // );
-    //########################################################################################################################
-              child: _buildActionButton(p),
-            ),
-          ],
-        ),
-
-       Positioned(
-  right: 8,
-  top: 8,
-  child: Row(
-    children: [
-      // ❤️ Wishlist
-      GestureDetector(
-        onTap: () {
-          setState(() {
-            if (isInWishlist) {
-              wishListGlobal.removeWhere((i) => i["name"] == p.name);
-            } else {
-              wishListGlobal.add({
-                "name": p.name,
-                "price": p.price,
-                "image": p.imagePath,
-              });
-            }
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                isInWishlist
-                    ? "${p.name} removed from wishlist"
-                    : "${p.name} added to wishlist",
+                child: Text(
+                  p.name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4,
+                ),
+                child: Text(
+                  p.brand,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4,
+                ),
+                child: Text(
+                  "\$${p.price}",
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4,
+                ),
+
+                child: _buildActionButton(p),
+              ),
+            ],
+          ),
+
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Row(
+              children: [
+                // ❤️ Wishlist
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (isInWishlist) {
+                        wishListGlobal.removeWhere((i) => i["name"] == p.name);
+                      } else {
+                        wishListGlobal.add({
+                          "name": p.name,
+                          "price": p.price,
+                          "image": p.imagePath,
+                        });
+                      }
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isInWishlist
+                              ? "${p.name} removed from wishlist"
+                              : "${p.name} added to wishlist",
+                        ),
+                      ),
+                    );
+                  },
+                  child: Icon(
+                    isInWishlist ? Icons.favorite : Icons.favorite_border,
+                    color: isInWishlist ? Colors.red : Colors.black,
+                    size: 26,
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // 📋 Equipment List
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (isInequipmentList) {
+                        equipmentListGlobal.removeWhere(
+                          (i) => i["name"] == p.name,
+                        );
+                      } else {
+                        equipmentListGlobal.add({
+                          "name": p.name,
+                          "price": p.price,
+                          "image": p.imagePath,
+                        });
+                      }
+
+                      // toggle اللون
+                      isInequipmentList = !isInequipmentList;
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isInequipmentList
+                              ? "${p.name} added to equipment list"
+                              : "${p.name} removed from equipment list",
+                        ),
+                      ),
+                    );
+                  },
+                  child: Icon(
+                    Icons.notifications, // أو playlist_add
+                    color: isInequipmentList ? Colors.blue : Colors.black,
+                    size: 26,
+                  ),
+                ),
+              ],
             ),
-          );
-        },
-        child: Icon(
-          isInWishlist ? Icons.favorite : Icons.favorite_border,
-          color: isInWishlist ? Colors.red : Colors.black,
-          size: 26,
-        ),
-      ),
-
-      const SizedBox(width: 8),
-
-      // 📋 Equipment List
-      GestureDetector(
-  onTap: () {
-    setState(() {
-      if (isInequipmentList) {
-        equipmentListGlobal
-            .removeWhere((i) => i["name"] == p.name);
-      } else {
-        equipmentListGlobal.add({
-          "name": p.name,
-          "price": p.price,
-          "image": p.imagePath,
-        });
-      }
-
-      // toggle اللون
-      isInequipmentList = !isInequipmentList;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isInequipmentList
-              ? "${p.name} added to equipment list"
-              : "${p.name} removed from equipment list",
-        ),
+          ),
+        ],
       ),
     );
-  },
-  child: Icon(
-    Icons.notifications, // أو playlist_add
-    color: isInequipmentList ? Colors.blue : Colors.black,
-    size: 26,
-  ),
-),
-    ],
-  ),
-),
-      
-      ],
-    ),
-  );
   }
 
   // ---------------------
@@ -593,7 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               cartItemsGlobal.add(
                 CartItem(
-                  daily_rent:0,
+                  daily_rent: 0,
                   name: p.name,
                   image: p.imagePath,
                   quantity: 1,
@@ -634,7 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   price: 0,
                   type: 'rent',
                   dateRange: '',
-                  daily_rent:50,
+                  daily_rent: 50,
                 ),
               );
 
