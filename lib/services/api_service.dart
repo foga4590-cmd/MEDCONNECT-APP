@@ -1,14 +1,24 @@
+//pubspec.lock  row 488 i delete
+// typed_data:
+// dependency: transitive
+// description:
+//   name: typed_data
+//   sha256: f9049c039ebfeb4cf7a7104a675823cd72dba8297f264b6637062516699fa006
+//   url: "https://pub.dev"
+// source: hosted
+// version: "1.4.0"
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:medconnect_app/models/category.dart';
+import 'package:medconnect_app/models/product.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-
 
 class ApiService {
   static const String baseUrl = 'https://medconnect-one-pi.vercel.app/api/api';
-  
+
   static String? _token;
-  
+
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -29,14 +39,14 @@ class ApiService {
     //   );
 
     //   var data = jsonDecode(response.body);
-      
+
     //   if (response.statusCode == 200) {
     //     // تخزين التوكن
     //     if (data['data'] != null && data['token'] != null) {
     //       await _saveToken(data['token']);
     //       await _saveUserData(data['data']);
     //     }
-        
+
     //     return {
     //       'success': true,
     //       'data': data['data'],
@@ -53,63 +63,57 @@ class ApiService {
     //     'error': 'خطأ في الاتصال: تأكد من اتصالك بالإنترنت',
     //   };
     // }
-     try {
-    print('🟢 Login attempt started');
-    
-    final response = await http.post(
-      Uri.parse('$baseUrl/v1/$role/login'),
+    try {
+      print('🟢 Login attempt started');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/v1/$role/login'),
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-          'role': role,
-        }),
-    );
+        body: jsonEncode({'email': email, 'password': password, 'role': role}),
+      );
 
-    print('📦 Response status: ${response.statusCode}');
-    print('📦 Response body: ${response.body}');
+      print('📦 Response status: ${response.statusCode}');
+      print('📦 Response body: ${response.body}');
 
-    var data = jsonDecode(response.body);
-    
-    if (response.statusCode == 200) {
-      print('✅ Login success - status 200');
-      print('📦 Data: ${data['data']}');
-      
-      // تخزين التوكن
-      if (data['data'] != null && data['token'] != null) {
-        print('💾 Found token: ${data['token']}');
-        await _saveToken(data['token']);
-        await _saveUserData(data['data']);
+      var data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        print('✅ Login success - status 200');
+        print('📦 Data: ${data['data']}');
+
+        // تخزين التوكن
+        if (data['data'] != null && data['token'] != null) {
+          print('💾 Found token: ${data['token']}');
+          await _saveToken(data['token']);
+          await _saveUserData(data['data']);
+        } else {
+          print('❌ Token not found in response!');
+          print('🔍 data["data"]: ${data['data']}');
+          print('🔍 data["token"]: ${data['token']}');
+        }
+
+        return {
+          'success': true,
+          'data': data['data'],
+          'message': data['message'],
+          'token': data['token'],
+        };
       } else {
-        print('❌ Token not found in response!');
-        print('🔍 data["data"]: ${data['data']}');
-        print('🔍 data["token"]: ${data['token']}');
+        print('❌ Login failed - status: ${response.statusCode}');
+        return {'success': false, 'error': data['error'] ?? 'فشل تسجيل الدخول'};
       }
-      
-      return {
-        'success': true,
-        'data': data['data'],
-        'message':data['message'],
-        'token':data['token']
-      };
-    } else {
-      print('❌ Login failed - status: ${response.statusCode}');
+    } catch (e) {
+      print('❌ Exception: $e');
       return {
         'success': false,
-        'error': data['error'] ?? 'فشل تسجيل الدخول',
+        'error': 'خطأ في الاتصال: تأكد من اتصالك بالإنترنت',
       };
     }
-  } catch (e) {
-    print('❌ Exception: $e');
-    return {
-      'success': false,
-      'error': 'خطأ في الاتصال: تأكد من اتصالك بالإنترنت',
-    };
   }
-  }
+
   Future<Map<String, dynamic>> logout() async {
     try {
       final response = await http.post(
@@ -129,44 +133,172 @@ class ApiService {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('auth_token');
         await prefs.remove('user_data');
-         print("token before log out : $_token");
-        
+        print("token before log out : $_token");
+
         return {
           'success': true,
           'message': data['message'] ?? 'تم تسجيل الخروج',
         };
       } else {
-        return {
-          'success': false,
-          'error': data['message'] ?? 'Logout failed',
-        };
+        return {'success': false, 'error': data['message'] ?? 'Logout failed'};
       }
     } catch (e) {
-      return {
-        'success': false,
-        'error': 'Connection error: $e',
-      };
+      return {'success': false, 'error': 'Connection error: $e'};
     }
   }
-Future<void> _saveToken(String token) async {
-  print('💾 _saveToken called with: $token');
-  
-  // 1. حفظ في المتغير
-  _token = token;
-  print('✅ _token after assignment: $_token');
-  
-  // 2. حفظ في SharedPreferences
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('auth_token', token);
-  
-  // 3. نتأكد إنه اتحفظ
-  String? savedToken = prefs.getString('auth_token');
-  print('✅ Token saved to SharedPreferences: $savedToken');
-  
-  // 4. نحمله تاني نتأكد
-  _token = savedToken;
-  print('✅ _token after reload: $_token');
-}
+
+  //##################################
+  // ------------------- Fetch Categories (Doctor) -------------------
+  Future<List<Category>> fetchCategories({
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    try {
+      // ✅ التأكد من وجود التوكن
+      if (_token == null) {
+        throw Exception('Please login first to view categories');
+      }
+
+      final uri = Uri.parse('$baseUrl/v1/category/doctor/show').replace(
+        queryParameters: {
+          'page': page.toString(),
+          'per_page': perPage.toString(),
+        },
+      );
+
+      print('🌐 Fetching categories: $uri');
+      print('🔑 Token: $_token');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+      );
+
+      print('📦 Response status: ${response.statusCode}');
+      print('📦 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+
+        if (data['success'] == true) {
+          List<Category> categories = (data['data'] as List)
+              .map((json) => Category.fromJson(json))
+              .toList();
+
+          print('✅ Loaded ${categories.length} categories');
+          return categories;
+        } else {
+          throw Exception(data['message'] ?? 'Failed to fetch categories');
+        }
+      } else if (response.statusCode == 401) {
+        throw Exception('Session expired. Please login again.');
+      } else {
+        throw Exception('HTTP Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error fetching categories: $e');
+      throw Exception('Error loading categories: $e');
+    }
+  }
+
+  //##################################
+  // ------------------- Fetch Products -------------------
+  // في api_service.dart
+  Future<Map<String, dynamic>> fetchProductsWithPagination({
+    int page = 1,
+    int perPage = 15,
+  }) async {
+    try {
+      if (_token == null) {
+        print('❌ No token found!');
+        throw Exception('Please login first');
+      }
+      print('🔑 Token exists: ${_token?.substring(0, 20)}...');
+      final uri = Uri.parse('$baseUrl/v1/product/doctor/show').replace(
+        queryParameters: {
+          'page': page.toString(),
+          'per_page': perPage.toString(),
+          'sort_by': 'id',
+          'sort_order': 'asc',
+        },
+      );
+      print('🌐 ========== FETCHING PRODUCTS ==========');
+      print('📡 URL: $uri');
+      print('📄 Page: $page, Per Page: $perPage');
+      print('🔐 Token: ${_token?.substring(0, 20)}...');
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+      );
+
+      print('📥 Response Status: ${response.statusCode}');
+      print('📦 Response Body Length: ${response.body.length} chars');
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        print('resonse body ${response.body}');
+        print('✅ Success flag: ${data['success']}');
+        print('📊 Total products in DB: ${data['total']}');
+        print('📄 Last page: ${data['last_page']}');
+        print('📦 Products in this page: ${data['data']?.length ?? 0}');
+
+        if (data['success'] == true) {
+          List<Product> products = (data['data'] as List)
+              .map((json) => Product.fromJson(json))
+              .toList();
+
+          print('✅ Loaded ${products.length} products from page $page');
+          print('🏷️ Product names: ${products.map((p) => p.name).join(', ')}');
+          print('=====================================');
+
+          return {
+            'products': products,
+            'lastPage': data['last_page'] ?? 1,
+            'total': data['total'] ?? 0,
+            'perPage': data['per_page'] ?? 15,
+          };
+        } else {
+          print('❌ API returned success=false: ${data['message']}');
+          throw Exception(data['message'] ?? 'Failed to fetch products');
+        }
+      } else {
+        print('❌ HTTP Error: ${response.statusCode}');
+        print('📦 Response body: ${response.body}');
+        throw Exception('HTTP Error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Error fetching products: $e');
+      throw Exception('Error loading products: $e');
+    }
+  }
+  //###################################
+
+  Future<void> _saveToken(String token) async {
+    print('💾 _saveToken called with: $token');
+
+    // 1. حفظ في المتغير
+    _token = token;
+    print('✅ _token after assignment: $_token');
+
+    // 2. حفظ في SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+
+    // 3. نتأكد إنه اتحفظ
+    String? savedToken = prefs.getString('auth_token');
+    print('✅ Token saved to SharedPreferences: $savedToken');
+
+    // 4. نحمله تاني نتأكد
+    _token = savedToken;
+    print('✅ _token after reload: $_token');
+  }
   // Future<void> _saveToken(String token) async {
   //   print("save token : $_token");
   //   _token = token;
@@ -185,7 +317,7 @@ Future<void> _saveToken(String token) async {
     print("loadtoken : $_token");
   }
 
-   static Future<Map<String, dynamic>?> loadUserData() async {
+  static Future<Map<String, dynamic>?> loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     String? userJson = prefs.getString('user_data');
     if (userJson != null) {
@@ -193,7 +325,6 @@ Future<void> _saveToken(String token) async {
     }
     return null;
   }
-
 
   static String? get token => _token;
   static bool get isLoggedIn => _token != null;

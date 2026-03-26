@@ -120,9 +120,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         child: PageView.builder(
           itemCount: widget.product.images.length,
           onPageChanged: (i) => setState(() => currentImage = i),
-          itemBuilder: (_, i) => Image.asset(
+          itemBuilder: (_, i) => Image.network(
             widget.product.images[i],
             fit: BoxFit.contain,
+            errorBuilder: (context,error,StackTrace){
+              return const Icon(Icons.broken_image,size:  50);
+            },
           ),
         ),
       );

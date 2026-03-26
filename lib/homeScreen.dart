@@ -1,112 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/introScreen.dart';
+import 'package:medconnect_app/models/category.dart';
 import 'package:medconnect_app/productDetails.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/doctorProfile.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/signInScreen.dart';
-
-
-// ---------------------
-// نموذج المنتج
-// ---------------------
-
-// ---------------------
-// قائمة المنتجات
-// ---------------------
-final List<Product> allProducts = [
-  Product(
-    name: "Digital Stethoscope",
-    brand: "CardioPro",
-    price: 499.99,
-    imagePath: "assets/images/Stetho_Scope.png",
-    status: "add to cart",
-    images: [
-      "assets/images/imageSteth1.png",
-      "assets/images/imageSteth2.png",
-      "assets/images/imageSteth3.png",
-    ],
-  ),
-
-  Product(
-    name: "X-ray machine",
-    brand: "XRayTech",
-    price: 1200.0,
-    imagePath: "assets/images/X-ray_machine.png",
-    status: "rent",
-    images: [
-      "assets/images/imageXray1.png",
-      "assets/images/imageXray2.png",
-      "assets/images/imageXray3.png",
-    ],
-  ),
-
-  Product(
-    name: "UltraSound system",
-    brand: "UltraSoundPro",
-    price: 800.0,
-    imagePath: "assets/images/UltraSound_system.png",
-    status: "add to cart",
-    images: [
-      "assets/images/imageUltra1.png",
-      "assets/images/imageUltra2.png",
-      "assets/images/imageUltra3.png",
-    ],
-  ),
-
-  Product(
-    name: "Ventilator",
-    brand: "VentPro",
-    price: 2500.0,
-    imagePath: "assets/images/ventilator.png",
-    status: "add to cart",
-    images: [
-      "assets/images/imageVent1.png",
-      "assets/images/imageVent2.png",
-      "assets/images/imageVent3.png",
-    ],
-  ),
-
-  Product(
-    name: "Defibrillator",
-    brand: "DefibTech",
-    price: 1500.0,
-    imagePath: "assets/images/Defibrillator.png",
-    status: "add to cart",
-    images: [
-      "assets/images/imageDef1.png",
-      "assets/images/imageDef2.png",
-      "assets/images/imageDef3.png",
-    ],
-  ),
-
-  Product(
-    name: "MRI Machine",
-    brand: "CardioWatch",
-    price: 999.99,
-    imagePath: "assets/images/MRI_Machine.png",
-    status: "Notify me",
-    images: [
-      "assets/images/imageMRI1.png",
-      "assets/images/imageMRI2.png",
-      "assets/images/imageMRI3.png",
-    ],
-  ),
-
-  Product(
-    name: "Cardiac Monitor",
-    brand: "MediScan",
-    price: 750.0,
-    imagePath: "assets/images/surgical_light_system.png",
-    status: "add to cart",
-    images: [
-      "assets/images/imageSurg1.png",
-      "assets/images/imageSurg2.png",
-      "assets/images/imageSurg3.png",
-    ],
-  ),
-];
 
 // ---------------------
 // GLOBAL LISTS
@@ -131,7 +31,128 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<Product> displayedProducts = List.from(allProducts);
+  List<Product> displayedProducts = [];
+  List<Product> _allProducts = [];
+int _currentPage = 1;
+int _totalPages = 1;
+bool _isLoadingMore = false;
+bool _hasMore = true;
+  //########################
+
+  // Categories variables
+  List<Category> _categories = [];
+  bool _isLoadingCategories = true;
+  String? _categoriesError;
+
+  // Products variables
+  bool _isLoadingProducts = true;
+  String? _productsError;
+
+  final ApiService _apiService = ApiService();
+final ScrollController _scrollController = ScrollController();
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+
+    _loadProducts();
+    _scrollController.addListener(() {
+    if (_scrollController.position.pixels == 
+        _scrollController.position.maxScrollExtent && 
+        _hasMore && !_isLoadingMore) {
+      _loadProducts(loadMore: true);
+    }
+  });
+  }
+@override
+void dispose() {
+  _scrollController.dispose();
+  super.dispose();
+}
+ Future<void> _loadProducts({bool loadMore = false}) async {
+  if (ApiService.token == null) {
+    setState(() {
+      _productsError = 'Please login first';
+      _isLoadingProducts = false;
+    });
+    return;
+  }
+  
+  if (!loadMore) {
+    setState(() {
+      _isLoadingProducts = true;
+      _productsError = null;
+      _currentPage = 1;
+      _allProducts = [];
+    });
+  } else {
+    setState(() {
+      _isLoadingMore = true;
+    });
+  }
+  
+  try {
+    final result = await _apiService.fetchProductsWithPagination(
+      page: _currentPage,
+      perPage: 10,
+    );
+    
+    setState(() {
+      if (loadMore) {
+        _allProducts.addAll(result['products']);
+      } else {
+        _allProducts = result['products'];
+      }
+      displayedProducts = List.from(_allProducts);
+      _totalPages = result['lastPage'];
+      _hasMore = _currentPage < _totalPages;
+      _currentPage++;
+      _isLoadingProducts = false;
+      _isLoadingMore = false;
+    });
+  } catch (e) {
+    setState(() {
+      _productsError = e.toString();
+      _isLoadingProducts = false;
+      _isLoadingMore = false;
+    });
+  }
+}
+
+  Future<void> _loadCategories() async {
+    // ✅ التأكد من وجود توكن
+    if (ApiService.token == null) {
+      setState(() {
+        _categoriesError = 'Please login first to view categories';
+        _isLoadingCategories = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingCategories = true;
+      _categoriesError = null;
+    });
+
+    try {
+      final categories = await _apiService.fetchCategories(
+        page: 1,
+        perPage: 10,
+      );
+
+      setState(() {
+        _categories = categories;
+        _isLoadingCategories = false;
+      });
+    } catch (e) {
+      setState(() {
+        _categoriesError = e.toString();
+        _isLoadingCategories = false;
+      });
+    }
+  }
+
+  //######################
 
   // البحث
 
@@ -143,9 +164,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _searchProduct(String query) {
     setState(() {
       if (query.isEmpty) {
-        displayedProducts = List.from(allProducts);
+        displayedProducts = List.from(_allProducts);
       } else {
-        displayedProducts = allProducts
+        displayedProducts = _allProducts
             .where(
               (p) =>
                   p.name.toLowerCase().contains(query.toLowerCase()) ||
@@ -313,35 +334,104 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _categoryItem({required String imagepath, required String label}) {
-    return Column(
-      children: [
-        SizedBox.square(
-          child: Container(
-            decoration: BoxDecoration(color: Colors.white),
-            child: Image.asset(imagepath, width: 40, height: 40),
+  Widget _categoryItem({required Category category}) {
+    return GestureDetector(
+      onTap: () {
+        // التنقل لشاشة تفاصيل القسم
+        print('Category tapped: ${category.name}');
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(35),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(35),
+              child: Image.network(
+                category.image,
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.category,
+                    size: 30,
+                    color: Colors.grey,
+                  );
+                },
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(label),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            category.name,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 
   Widget buildCategories() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _categoryItem(
-          imagepath: "assets/images/surgical.png",
-          label: "Surgical",
+    if (_isLoadingCategories) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CircularProgressIndicator(),
         ),
-        _categoryItem(imagepath: "assets/images/fly.png", label: "Imaging"),
-        _categoryItem(
-          imagepath: "assets/images/laboratory.png",
-          label: "Laboratory",
+      );
+    }
+
+    if (_categoriesError != null) {
+      return Center(
+        child: Column(
+          children: [
+            Text(
+              _categoriesError!,
+              style: const TextStyle(color: Colors.red),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _loadCategories,
+              child: const Text('Retry'),
+            ),
+          ],
         ),
-      ],
+      );
+    }
+
+    if (_categories.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text('No categories found.'),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _categories.map((category) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: _categoryItem(category: category),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -356,22 +446,53 @@ class _HomeScreenState extends State<HomeScreen> {
   // Grid Products
   // ---------------------
   Widget _featuredGrid() {
-    return GridView.builder(
-      itemCount: allProducts.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.60,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+  if (_isLoadingProducts && _allProducts.isEmpty) {
+    return const Center(child: CircularProgressIndicator());
+  }
+  
+  if (_productsError != null && _allProducts.isEmpty) {
+    return Center(
+      child: Column(
+        children: [
+          Text('Error: $_productsError'),
+          ElevatedButton(
+            onPressed: () => _loadProducts(),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
-      itemBuilder: (context, index) {
-        return _productCard(allProducts[index]);
-      },
     );
   }
+  
+  if (_allProducts.isEmpty) {
+    return const Center(child: Text('No products found.'));
+  }
 
+  return Column(
+    children: [
+      GridView.builder(
+        controller: _scrollController,
+        itemCount: displayedProducts.length,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.60,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemBuilder: (context, index) {
+          return _productCard(displayedProducts[index]);
+        },
+      ),
+      if (_isLoadingMore)
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CircularProgressIndicator(),
+        ),
+    ],
+  );
+}
   // ---------------------
   // PRODUCT CARD
   // ---------------------
@@ -402,11 +523,30 @@ class _HomeScreenState extends State<HomeScreen> {
                 //#####################################################
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
+                  child: Image.network(
                     p.imagePath,
                     height: MediaQuery.of(context).size.height * 0.17,
                     width: double.infinity,
                     fit: BoxFit.fill,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: MediaQuery.of(context).size.height * 0.17,
+                        color: Colors.grey.shade200,
+                        child: const Icon(
+                          Icons.broken_image,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        height: MediaQuery.of(context).size.height * 0.17,
+                        color: Colors.grey.shade200,
+                        child: const Center(child: CircularProgressIndicator()),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -450,12 +590,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
+              if (p.stock == 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0,
+                    vertical: 2,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      "Out of Stock",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8.0,
                   vertical: 4,
                 ),
-
                 child: _buildActionButton(p),
               ),
             ],
@@ -548,8 +713,27 @@ class _HomeScreenState extends State<HomeScreen> {
   // BUTTONS: Add / Rent / Notify Me
   // ---------------------
   Widget _buildActionButton(Product p) {
-    // ⭐ Notify Me فقط
-    if (p.status == "Notify me") {
+    // ✅ حالة 1: Out of Stock (stock == 0) و restock_date == null
+    if (p.stock == 0 && p.restockDate == null) {
+      return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey.shade400,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            disabledBackgroundColor: Colors.grey.shade400,
+          ),
+          onPressed: null, // disabled
+          child: const Text(
+            "Out of Stock",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    }
+
+    // ✅ حالة 2: Notify Me (stock == 0 و restock_date != null)
+    if (p.stock == 0 && p.restockDate != null) {
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton(
@@ -558,6 +742,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
           onPressed: () {
+            // TODO: استدعاء API الـ Notify Me
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text("We will notify you when available"),
@@ -572,12 +757,13 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    // ⭐ Rent + Add To Cart مع بعض
+    // ✅ حالة 3: منتج متاح (stock > 0)
+    // Rent + Add To Cart (يظهر Rent فقط لو isRentable == true)
     return Row(
       children: [
         // ---------- Add To Cart ----------
         Expanded(
-          flex: 3,
+          flex: p.isRentable ? 3 : 1,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
@@ -595,7 +781,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   dateRange: '',
                 ),
               );
-
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("${p.name} added to cart (Buy)")),
               );
@@ -607,37 +792,37 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        const SizedBox(width: 10),
+        // ---------- Rent (يظهر فقط لو isRentable == true) ----------
+        if (p.isRentable) ...[
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 2,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: () {
+                cartItemsGlobal.add(
+                  CartItem(
+                    name: p.name,
+                    image: p.imagePath,
+                    quantity: 1,
+                    price: 0,
+                    type: 'rent',
+                    dateRange: '',
+                    daily_rent: 50,
+                  ),
+                );
 
-        // ---------- Rent ----------
-        Expanded(
-          flex: 2,
-
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("${p.name} added to cart (Rent)")),
+                );
+              },
+              child: const Text("Rent", style: TextStyle(color: Colors.white)),
             ),
-            onPressed: () {
-              cartItemsGlobal.add(
-                CartItem(
-                  name: p.name,
-                  image: p.imagePath,
-                  quantity: 1,
-                  price: 0,
-                  type: 'rent',
-                  dateRange: '',
-                  daily_rent: 50,
-                ),
-              );
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("${p.name} added to cart (Rent)")),
-              );
-            },
-            child: const Text("rent", style: TextStyle(color: Colors.white)),
           ),
-        ),
+        ],
       ],
     );
   }
