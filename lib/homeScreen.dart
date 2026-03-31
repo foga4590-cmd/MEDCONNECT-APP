@@ -501,6 +501,12 @@ void dispose() {
     bool isInequipmentList = equipmentListGlobal.any(
       (i) => i["name"] == p.name,
     );
+
+    String supplierName = '';
+    if(p.supplierData != null && p.supplierData!['company_name'] != null){
+supplierName = p.supplierData!['company_name'];
+    }
+    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -571,7 +577,7 @@ void dispose() {
                   vertical: 4,
                 ),
                 child: Text(
-                  p.brand,
+                  supplierName,
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ),

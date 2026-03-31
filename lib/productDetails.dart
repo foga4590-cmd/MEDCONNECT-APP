@@ -55,7 +55,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         _product = widget.product;
         _isLoading = false;
       });
-      
     }
 
     // // لو محتاجين نجيب من API
@@ -115,6 +114,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     return rentEndDate!.difference(rentStartDate!).inDays + 1;
   }
 
+  bool isInWishlist = false;
+  bool isInEquipmentList = false;
   // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
@@ -167,14 +168,136 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           children: [
             _imageSlider(),
             _imageDots(),
-            const SizedBox(height: 8),
 
+            //###########
+            const SizedBox(height: 15),
+            Container(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _product!.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        if (_product!.description.isNotEmpty) ...[
+                          Expanded(child: Text(_product!.description)),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            //##########3333
+            const SizedBox(height: 15),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 40,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() => isInWishlist = !isInWishlist);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isInWishlist
+                                    ? "Added to wishlist"
+                                    : "Removed from wishlist",
+                              ),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                        icon: Icon(
+                          isInWishlist ? Icons.favorite : Icons.favorite_border,
+                          color: isInWishlist ? Colors.red : Colors.black,
+                        ),
+                        label: Text(
+                          "Wishlist",
+                          style: TextStyle(
+                            color: isInWishlist ? Colors.red : Colors.black,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: SizedBox(
+                      height: 40,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          setState(
+                            () => isInEquipmentList = !isInEquipmentList,
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                isInEquipmentList
+                                    ? "Added to equipment list"
+                                    : "Removed from equipment list",
+                              ),
+                              duration: const Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                        icon: Icon(
+                          Icons.notifications,
+                          color: isInEquipmentList ? Colors.blue : Colors.black,
+                        ),
+                        label: Text(
+                          "Equipment List",
+                          style: TextStyle(
+                            color: isInEquipmentList
+                                ? Colors.blue
+                                : Colors.black,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 15),
             _supplierCard(context),
             _rentBuySwitch(),
-
-            if (selectedPurchase == 0) _rentConfig(),
-            if (selectedPurchase == 1) _buyConfig(),
-
+            if (_product!.stock != 0) ...[
+              if (selectedPurchase == 0) _rentConfig(),
+              if (selectedPurchase == 1) _buyConfig(),
+            ],
             _tabs(),
             selectedTab == 0 ? _specifications() : _reviewsSection(),
 
@@ -183,6 +306,109 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         ),
       ),
       bottomNavigationBar: _actionButton(),
+    );
+  }
+
+  Widget locationAndSetupTime() {
+    return Container(
+      // padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Location Card
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                const Text(
+                  "Location",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey),
+                  ),
+
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          size: 15,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Main Clinic",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Setup Time Card
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                const Text(
+                  "Setup time",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey),
+                  ),
+
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.access_time,
+                          size: 15,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          // _product!.setupDuration == 0
+                          //     ? "Same day"
+                          //     :
+                          "${_product!.setupDuration}",
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -219,78 +445,118 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   );
 
   // ---------------- SUPPLIER ----------------
-  Widget _supplierCard(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SupplierProfileScreen(
-              supplierId: _product!.supplierId,
-              supplierName: _product!.brand,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              backgroundColor: Colors.grey,
-              child: const Icon(Icons.business, color: Colors.white),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _product!.brand, // ✅ اسم المورد من المنتج
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  // ✅ عرض التقييم (مؤقتاً، لو جاي من API هنضيفه)
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        "4.8 (120 Reviews)", // مؤقتاً، لو جاي من API هنستخدمه
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+  Widget _supplierCard(BuildContext context) {
+    // ✅ جلب اسم المورد من supplierData
+    String supplierName = 'xxxxxx'; // اسم افتراضي
+
+    if (_product!.supplierData != null) {
+      supplierName = _product!.supplierData!['company_name'] ?? 'xxxxxx';
+      print('🏢 Supplier from API: $supplierName');
+    } else {
+      print('⚠️ No supplier data available, using brand: $supplierName');
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SupplierProfileScreen(
+                supplierId: _product!.supplierId,
+                supplierName: supplierName,
               ),
             ),
-            const Icon(Icons.chevron_right),
-          ],
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              // ✅ صورة المورد من supplierData
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.grey.shade200,
+                child:
+                    _product!.supplierData != null &&
+                        _product!.supplierData!['company_image_url'] != null &&
+                        _product!.supplierData!['company_image_url']
+                            .toString()
+                            .isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          _product!.supplierData!['company_image_url'],
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.business,
+                              size: 30,
+                              color: Colors.grey,
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(Icons.business, size: 30, color: Colors.grey),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      supplierName, // ✅ اسم المورد الحقيقي
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 16),
+                        const SizedBox(width: 4),
+                        const Text(
+                          "4.8 (120 Reviews)",
+                          style: TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
+
   // ---------------- RENT / BUY SWITCH ----------------
-  Widget _rentBuySwitch() => Padding(
-    padding: const EdgeInsets.all(16),
-    child: Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(30),
+  Widget _rentBuySwitch() {
+    if (_product!.stock == 0) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Row(children: [_switchItem("Rent", 0), _switchItem("Buy", 1)]),
       ),
-      child: Row(children: [_switchItem("Rent", 0), _switchItem("Buy", 1)]),
-    ),
-  );
+    );
+  }
 
   Widget _switchItem(String title, int index) => Expanded(
     child: GestureDetector(
@@ -332,6 +598,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           ],
         ),
         const SizedBox(height: 16),
+        locationAndSetupTime(),
         const Divider(),
         _priceRow("Daily Rate", "\$50 / Day"),
         _priceRow("Security Deposit", "\$200"),
@@ -368,7 +635,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: Colors.white,
+        border: Border.all(color: Colors.grey),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -399,24 +667,74 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        _dropdown(selectedConfig, [
-          "Standard Unit",
-          "Advanced Unit",
-        ], (v) => setState(() => selectedConfig = v!)),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Text(
+            _product!.configuration ?? "null",
+
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+
         const SizedBox(height: 16),
         const Text("Warranty", style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        _dropdown(selectedWarranty, [
-          "1-Year Standard Warranty",
-          "2-Year Extended Warranty",
-        ], (v) => setState(() => selectedWarranty = v!)),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Text(
+            _product!.warranty == 0 || _product!.warranty.isEmpty
+                ? "No warranty"
+                : "${_product!.warranty} ",
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+        const SizedBox(height: 20),
+        locationAndSetupTime(),
         const SizedBox(height: 20),
         _priceRow("Total Price", "\$${_product!.price}", bold: true),
-        if (_product!.stock > 0)...[
-        _priceRow("Total Stock", "\$${_product!.stock}", bold: true),
-        ],
-        
-        // بعد _priceRow("Total Price", "\$${widget.product.price}", bold: true),
+
+        // if (_product!.stock > 0) ...[
+        //   _priceRow("Total Stock", "\$${_product!.stock}", bold: true),
+        // ],
+
+        // في مكان عرض السعر أو فوق الزر
+        // if (_product!.stock == 0)
+        //   Padding(
+        //     padding: const EdgeInsets.symmetric(horizontal: 16),
+        //     child: Container(
+        //       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        //       decoration: BoxDecoration(
+        //         color: Colors.red.shade100,
+        //         borderRadius: BorderRadius.circular(12),
+        //       ),
+        //       child: const Row(
+        //         mainAxisSize: MainAxisSize.min,
+        //         children: [
+        //           Icon(Icons.warning, color: Colors.red, size: 18),
+        //           SizedBox(width: 8),
+        //           Text(
+        //             "Out of Stock",
+        //             style: TextStyle(
+        //               color: Colors.red,
+        //               fontWeight: FontWeight.bold,
+        //             ),
+        //           ),
+        //         ],
+        //       ),
+        //     ),
+        //   ),
         if (_product!.stock > 0 && _product!.stock < 10)
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -483,60 +801,75 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   );
 
   // ---------------- SPECIFICATIONS ----------------
+  List<Map<String, String>> _parseSpecifications() {
+    List<Map<String, String>> result = [];
+
+    for (var item in _product!.specification) {
+      if (item is Map<String, dynamic>) {
+        String name = item['name']?.toString() ?? '';
+        String value = item['value']?.toString() ?? '';
+        if (name.isNotEmpty && value.isNotEmpty) {
+          result.add({'name': name, 'value': value});
+        }
+      }
+    }
+
+    return result;
+  }
+
   Widget _specifications() => _card(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // الوصف
-        if (_product!.description.isNotEmpty) ...[
-          const Text(
-            "Description",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(_product!.description),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-        ],
 
-        // المواصفات من الـ API
+      children: [
+        // المواصفات
         const Text(
           "Specifications",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
 
         if (_product!.specification.isNotEmpty)
-          ..._product!.specification.map((spec) {
+          ..._parseSpecifications().map((spec) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
+
               child: Row(
+                //crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("• ", style: TextStyle(color: Colors.blue)),
-                  Expanded(
-                    child: Text(
-                      spec.toString(),
-                      style: const TextStyle(color: Color.fromARGB(255, 169, 45, 45)),
+                  Text(
+                    "${spec['name']}:",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
+                  ),
+
+                  Text(
+                    spec['value']!,
+                    style: const TextStyle(color: Colors.grey),
                   ),
                 ],
               ),
             );
-          }).toList(),
+          }).toList()
+        else
+          const Text(
+            "No specifications available",
+            style: TextStyle(color: Colors.grey),
+          ),
 
-        // الضمان
-        if (_product!.warranty != '0') ...[
-          const SizedBox(height: 8),
-          _SpecRow("Warranty", "${_product!.warranty} months"),
-        ],
+        // // باقي البيانات (الضمان، مدة التجهيز، الكمية)
+        // if (_product!.warranty != '0') ...[
+        //   const SizedBox(height: 8),
+        //   _SpecRow("Warranty", "${_product!.warranty} months"),
+        // ],
 
-        // مدة التجهيز
-        if (_product!.setupDuration > 0) ...[
-          _SpecRow("Setup Durationnnnnnnnn", "${_product!.setupDuration} days"),
-        ],
+        // if (_product!.setupDuration > 0) ...[
+        //   _SpecRow("Setup Duration", "${_product!.setupDuration} days"),
+        // ],
 
-        // الكمية المتوفرة
         // if (_product!.stock > 0)
         //   _SpecRow("In Stock", "${_product!.stock} units")
         // else
@@ -733,7 +1066,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   name: _product!.name,
                   image: _product!.imagePath,
                   quantity: 1,
-                  price:_product!.price,
+                  price: _product!.price,
                   type: selectedPurchase == 0 ? "rent" : "buy",
                   dateRange: selectedPurchase == 0 ? "3 Days" : "",
                   daily_rent: 50,

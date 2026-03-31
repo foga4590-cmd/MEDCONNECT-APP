@@ -18,7 +18,7 @@ class ApiService {
   static const String baseUrl = 'https://medconnect-one-pi.vercel.app/api/api';
 
   static String? _token;
-
+//static Map<String, dynamic>? _cachedSupplierData;
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
@@ -319,6 +319,83 @@ Future<Product> fetchProductById(int productId) async {
   } catch (e) {
     print('❌ Error fetching product details: $e');
     throw Exception('Error loading product: $e');
+  }
+}
+
+
+// ------------------- Fetch Products by Supplier ID -------------------
+Future<Map<String, dynamic>> fetchProductsBySupplierId({
+  required int supplierId,
+  int page = 1,
+  int perPage = 10,
+}) async {
+  try {
+       print('🔵 fetchProductsBySupplierId called - supplierId: $supplierId, page: $page');
+    if (_token == null) {
+      print('❌ No token found for supplier products');
+      throw Exception('Please login first');
+      
+    }
+
+    final uri = Uri.parse('$baseUrl/v1/product/supplier-profile/show/$supplierId')
+        .replace(queryParameters: {
+      'page': page.toString(),
+      'per_page': perPage.toString(),
+    });
+
+    print('🌐 Fetching products for supplier $supplierId: $uri');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+    );
+
+    print('📦 Response status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+       print('✅ Supplier products API success: ${data['success']}');
+        print('📊 Total: ${data['total']}');
+        print('📄 Last page: ${data['last_page']}');
+        print('📄 Current page: $page');
+      if (data['success'] == true) {
+        List<Product> products = (data['data'] as List)
+            .map((json) => Product.fromJson(json))
+            .toList();
+           // print("supplier response body: ${response.body}");
+         print('✅ Loaded ${products.length} products for supplier $supplierId');
+           print('🔍 Supplier data from API: ${data['data']?.first?['supplier']}');
+        // استخراج بيانات المورد من أول منتج (لو موجود)
+        // if (products.isNotEmpty && products.first.supplierData != null) {
+        //   _cachedSupplierData = products.first.supplierData;
+        
+      //     print('✅ Cached supplier data: ${_cachedSupplierData?['company_name']}');
+      // //  }
+        
+        return {
+          'products': products,
+          'lastPage': data['last_page'] ?? 1,
+          'total': data['total'] ?? 0,
+          'perPage': data['per_page'] ?? perPage,
+        };
+      } else {
+        throw Exception(data['message'] ?? 'Failed to fetch supplier products');
+      }
+    } else if (response.statusCode == 401) {
+      throw Exception('Session expired. Please login again.');
+    } else if (response.statusCode == 404) {
+        print('❌ Supplier not found: $supplierId');
+      throw Exception('Supplier not found');
+    } else {
+        print('❌ Supplier products HTTP error: ${response.statusCode}');
+      throw Exception('HTTP Error: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('❌ Error fetching supplier products: $e');
+    throw Exception('Error loading supplier products: $e');
   }
 }
 //##################################

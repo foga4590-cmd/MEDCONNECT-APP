@@ -10,11 +10,12 @@ class Product {
   final DateTime? restockDate;
   final String status;
   final List<String> images;
-  
+  final Map<String, dynamic>? supplierData; 
   // ✅ الحقول الجديدة من API
   final String description;
   final List<dynamic> specification;
   final String warranty;
+  final String? configuration;
   final int setupDuration;
 
   Product({
@@ -29,6 +30,10 @@ class Product {
     this.restockDate,
     required this.status,
     required this.images,
+    this.configuration,
+
+   this.supplierData,
+
     required this.description,
     required this.specification,
     required this.warranty,
@@ -66,6 +71,7 @@ class Product {
       specification: json['specification'] ?? [],
       warranty: json['warranty'] ?? '0',
       setupDuration: json['setup_duration'] ?? 0,
+       supplierData: json['supplier'], 
     );
   }
 }

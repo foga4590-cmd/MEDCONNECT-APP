@@ -63,7 +63,7 @@ class _SignInScreenState extends State<SignInScreen> {
           duration: Duration(seconds: 2),
         ),
       );
-      await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(Duration(milliseconds: 300));
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => MainScreen()),
