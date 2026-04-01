@@ -4,6 +4,8 @@ import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/supplierProfile.dart';
+import 'package:provider/provider.dart';
+import '../providers/wishlist_provider.dart';
 
 // Global cart items list
 
@@ -62,7 +64,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     //   _isLoading = true;
     //   _error = null;
     // });
-
+    print(" product config : ${_product!.configuration}");
     try {
       final freshproduct = await _apiService.fetchProductById(widget.productId);
       setState(() {
@@ -151,6 +153,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         body: const Center(child: Text('Product not found')),
       );
     }
+    final wishlistProvider = Provider.of<WishlistProvider>(
+      context,
+      listen: true,
+    );
+    final isInWishlist = wishlistProvider.isInWishlist(_product!.id);
     return Scaffold(
       backgroundColor: const Color(0xffF5F5F5),
       appBar: AppBar(
@@ -213,11 +220,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       height: 40,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          setState(() => isInWishlist = !isInWishlist);
+                          wishlistProvider.toggleWishlist(_product!.id);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                isInWishlist
+                                wishlistProvider.isInWishlist(_product!.id)
                                     ? "Added to wishlist"
                                     : "Removed from wishlist",
                               ),
@@ -266,7 +273,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                           );
                         },
                         icon: Icon(
-                          Icons.notifications,
+                          Icons.bookmark_border,
                           color: isInEquipmentList ? Colors.blue : Colors.black,
                         ),
                         label: Text(
@@ -294,10 +301,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             const SizedBox(height: 15),
             _supplierCard(context),
             _rentBuySwitch(),
-            if (_product!.stock != 0) ...[
-              if (selectedPurchase == 0) _rentConfig(),
-              if (selectedPurchase == 1) _buyConfig(),
-            ],
+            //   if (_product!.stock != 0) ...[
+            if (selectedPurchase == 0) _rentConfig(),
+            if (selectedPurchase == 1) _buyConfig(),
+
             _tabs(),
             selectedTab == 0 ? _specifications() : _reviewsSection(),
 
@@ -542,9 +549,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   // ---------------- RENT / BUY SWITCH ----------------
   Widget _rentBuySwitch() {
-    if (_product!.stock == 0) {
-      return const SizedBox.shrink();
-    }
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
@@ -676,7 +680,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: Text(
-            _product!.configuration ?? "null",
+            _product!.configuration == 0
+                ? "No configuration"
+                : "${_product!.configuration} ",
 
             style: const TextStyle(fontSize: 14),
           ),
@@ -747,28 +753,28 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     ),
   );
 
-  Widget _dropdown(
-    String value,
-    List<String> items,
-    Function(String?) onChanged,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: DropdownButton<String>(
-        value: value,
-        isExpanded: true,
-        underline: const SizedBox(),
-        items: items
-            .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-            .toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
+  // Widget _dropdown(
+  //   String value,
+  //   List<String> items,
+  //   Function(String?) onChanged,
+  // ) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 12),
+  //     decoration: BoxDecoration(
+  //       color: Colors.grey.shade200,
+  //       borderRadius: BorderRadius.circular(12),
+  //     ),
+  //     child: DropdownButton<String>(
+  //       value: value,
+  //       isExpanded: true,
+  //       underline: const SizedBox(),
+  //       items: items
+  //           .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+  //           .toList(),
+  //       onChanged: onChanged,
+  //     ),
+  //   );
+  // }
 
   // ---------------- TABS ----------------
   Widget _tabs() => Padding(
@@ -823,12 +829,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
       children: [
         // المواصفات
-        const Text(
-          "Specifications",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-
         if (_product!.specification.isNotEmpty)
           ..._parseSpecifications().map((spec) {
             return Padding(

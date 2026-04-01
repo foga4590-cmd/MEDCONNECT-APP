@@ -7,6 +7,8 @@ import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/doctorProfile.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/signInScreen.dart';
+import 'package:provider/provider.dart';
+import 'package:medconnect_app/providers/wishlist_provider.dart';
 
 // ---------------------
 // GLOBAL LISTS
@@ -497,7 +499,10 @@ void dispose() {
   // PRODUCT CARD
   // ---------------------
   Widget _productCard(Product p) {
-    bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
+final wishlistProvider = Provider.of<WishlistProvider>(context, listen: true);
+final isInWishlist = wishlistProvider.isInWishlist(p.id);
+
+   // bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
     bool isInequipmentList = equipmentListGlobal.any(
       (i) => i["name"] == p.name,
     );
@@ -640,24 +645,14 @@ supplierName = p.supplierData!['company_name'];
                 // ❤️ Wishlist
                 GestureDetector(
                   onTap: () {
-                    setState(() {
-                      if (isInWishlist) {
-                        wishListGlobal.removeWhere((i) => i["name"] == p.name);
-                      } else {
-                        wishListGlobal.add({
-                          "name": p.name,
-                          "price": p.price,
-                          "image": p.imagePath,
-                        });
-                      }
-                    });
+                   wishlistProvider.toggleWishlist(p.id);
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          isInWishlist
-                              ? "${p.name} removed from wishlist"
-                              : "${p.name} added to wishlist",
+                          wishlistProvider.isInWishlist(p.id)
+                              ? "${p.name} added to wishlist"
+                              :"${p.name} removed from wishlist"
                         ),
                       ),
                     );
@@ -702,7 +697,7 @@ supplierName = p.supplierData!['company_name'];
                     );
                   },
                   child: Icon(
-                    Icons.notifications, // أو playlist_add
+                    Icons.bookmark_border, // أو playlist_add
                     color: isInequipmentList ? Colors.blue : Colors.black,
                     size: 26,
                   ),

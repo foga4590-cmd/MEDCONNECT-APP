@@ -32,7 +32,7 @@ class Product {
     required this.images,
     this.configuration,
 
-   this.supplierData,
+   required this.supplierData,
 
     required this.description,
     required this.specification,
@@ -45,6 +45,22 @@ class Product {
     // استخراج أول صورة
     String firstImage = '';
     List<String> imagesList = [];
+    // ✅ معالجة configuration
+  dynamic config = json['configuration'];
+  String? configurationValue;
+  
+  if (config != null) {
+    if (config is String) {
+      configurationValue = config.isEmpty ? null : config;
+    } else if (config is num) {
+      configurationValue = config.toString();
+    } else if (config is Map) {
+      configurationValue = config.toString();
+    } else {
+      configurationValue = config.toString();
+    }
+  }
+  
     
     if (json['image'] != null && json['image'] is List) {
       imagesList = (json['image'] as List)
@@ -72,6 +88,7 @@ class Product {
       warranty: json['warranty'] ?? '0',
       setupDuration: json['setup_duration'] ?? 0,
        supplierData: json['supplier'], 
+       configuration: configurationValue
     );
   }
 }

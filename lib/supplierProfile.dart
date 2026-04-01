@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/core/app_colorSupplier.dart';
 import 'package:medconnect_app/models/product.dart';
+import 'package:medconnect_app/productDetails.dart';
+import 'package:medconnect_app/providers/wishlist_provider.dart';
 import 'package:medconnect_app/services/api_service.dart';
+import 'package:provider/provider.dart';
 
 class SupplierProfileScreen extends StatefulWidget {
   final int supplierId;
@@ -83,13 +86,11 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
         print('🔄 Load products - current page: $_currentPage');
         print('🔄 Products before: ${_products.length}');
 
-        
-      if (_products.isNotEmpty && _products.first.supplierData != null) {
-        _supplierData = _products.first.supplierData;
-        print('✅ Supplier data loaded: ${_supplierData?['company_name']}');
-        print('✅ Image URL: ${_supplierData?['company_image_url']}');
-      }
-
+        if (_products.isNotEmpty && _products.first.supplierData != null) {
+          _supplierData = _products.first.supplierData;
+          print('✅ Supplier data loaded: ${_supplierData?['company_name']}');
+          print('✅ Image URL: ${_supplierData?['company_image_url']}');
+        }
       });
     } catch (e) {
       setState(() {
@@ -101,15 +102,15 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
 
   Future<void> _loadMoreProducts() async {
     if (_currentPage > _totalPages) {
-    print('⚠️ No more pages: $_currentPage > $_totalPages');
-    return;
-  }
-  if (_isLoadingMore) {
-    print('⚠️ Already loading more');
-    return;
-  }
-  
-  print('🔄 Loading more products - page $_currentPage of $_totalPages');
+      print('⚠️ No more pages: $_currentPage > $_totalPages');
+      return;
+    }
+    if (_isLoadingMore) {
+      print('⚠️ Already loading more');
+      return;
+    }
+
+    print('🔄 Loading more products - page $_currentPage of $_totalPages');
 
     setState(() {
       _isLoadingMore = true;
@@ -123,25 +124,25 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
       );
 
       setState(() {
-
         // _products.addAll(result['products']);
 
-for (var newProduct in result['products']) {
-    if (!_products.any((p) => p.id == newProduct.id)) {
-      _products.add(newProduct);
-    } else {
-      print('⚠️ Duplicate product skipped: ${newProduct.id} - ${newProduct.name}');
-    }
-  }
+        for (var newProduct in result['products']) {
+          if (!_products.any((p) => p.id == newProduct.id)) {
+            _products.add(newProduct);
+          } else {
+            print(
+              '⚠️ Duplicate product skipped: ${newProduct.id} - ${newProduct.name}',
+            );
+          }
+        }
         _totalPages = result['lastPage'];
         _currentPage++;
         _isLoadingMore = false;
 
-
         print('🔄 Load more - page: $_currentPage');
         print('🔄 Products before add: ${_products.length}');
         print('➕ Adding ${result['products'].length} products');
-      
+
         print('🔄 Products after add: ${_products.length}');
       });
     } catch (e) {
@@ -211,13 +212,12 @@ for (var newProduct in result['products']) {
   Widget _supplierHeader() {
     // لو فيه supplierData من API
     final imageUrl = _supplierData != null
-      ? _supplierData!['company_image_url'] ?? ''
-      : '';
-  final companyName = widget.supplierName;
+        ? _supplierData!['company_image_url'] ?? ''
+        : '';
+    final companyName = widget.supplierName;
 
-  print('🔍 Supplier Header - Image URL: $imageUrl');
-  print('🔍 Supplier Header - Company: $companyName');
-
+    print('🔍 Supplier Header - Image URL: $imageUrl');
+    print('🔍 Supplier Header - Company: $companyName');
 
     return Container(
       color: Colors.white,
@@ -228,18 +228,22 @@ for (var newProduct in result['products']) {
             radius: 56,
             backgroundColor: Colors.grey.shade200,
             child: imageUrl.isNotEmpty
-              ? ClipOval(
-                  child: Image.network(
-                    imageUrl,
-                    width: 112,
-                    height: 112,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      print('❌ Failed to load image: $imageUrl');
-                      return const Icon(Icons.business, size: 56, color: Colors.grey);
-                    },
-                  ),
-                )
+                ? ClipOval(
+                    child: Image.network(
+                      imageUrl,
+                      width: 112,
+                      height: 112,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        print('❌ Failed to load image: $imageUrl');
+                        return const Icon(
+                          Icons.business,
+                          size: 56,
+                          color: Colors.grey,
+                        );
+                      },
+                    ),
+                  )
                 : const Icon(Icons.business, size: 56, color: Colors.grey),
           ),
           const SizedBox(height: 12),
@@ -329,50 +333,49 @@ for (var newProduct in result['products']) {
       ),
     );
   }
-// ---------------- CERTIFICATES ----------------
-Widget _certificates() {
-  // جلب أسماء الشهادات من supplierData
-  List<String> certificates = [];
-  
-  if (_supplierData != null) {
-    // لو كان certificate_name عبارة عن List
-    if (_supplierData!['certificate_name'] is List) {
-      certificates = List<String>.from(_supplierData!['certificate_name']);
+
+  // ---------------- CERTIFICATES ----------------
+  Widget _certificates() {
+    // جلب أسماء الشهادات من supplierData
+    List<String> certificates = [];
+
+    if (_supplierData != null) {
+      // لو كان certificate_name عبارة عن List
+      if (_supplierData!['certificate_name'] is List) {
+        certificates = List<String>.from(_supplierData!['certificate_name']);
+      }
+      // لو كان certificate_name string واحد
+      else if (_supplierData!['certificate_name'] != null) {
+        certificates.add(_supplierData!['certificate_name'].toString());
+      }
     }
-    // لو كان certificate_name string واحد
-    else if (_supplierData!['certificate_name'] != null) {
-      certificates.add(_supplierData!['certificate_name'].toString());
+
+    // لو مفيش بيانات من API، نستخدم بيانات افتراضية
+    if (certificates.isEmpty) {
+      certificates = [" "];
     }
-  }
-  
-  // لو مفيش بيانات من API، نستخدم بيانات افتراضية
-  if (certificates.isEmpty) {
-    certificates = [
-      " ",
-     
-    ];
+
+    return _card(
+      title: "Certificates",
+      child: Column(
+        children: certificates.map((cert) => _certificateItem(cert)).toList(),
+      ),
+    );
   }
 
-  return _card(
-    title: "Certificates",
-    child: Column(
-      children: certificates.map((cert) => _certificateItem(cert)).toList(),
-    ),
-  );
-}
+  Widget _certificateItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.verified, color: AppColors.primary, size: 20),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text)),
+        ],
+      ),
+    );
+  }
 
-Widget _certificateItem(String text) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Row(
-      children: [
-        const Icon(Icons.verified, color: AppColors.primary, size: 20),
-        const SizedBox(width: 8),
-        Expanded(child: Text(text)),
-      ],
-    ),
-  );
-}
   // ---------------- PRODUCTS ----------------
   Widget _productsSection() {
     if (_isLoading && _products.isEmpty) {
@@ -428,65 +431,121 @@ Widget _certificateItem(String text) {
 
   Widget _productCard(Product product) {
     print('🃏 Product card: ${product.id} - ${product.name}');
-    
-    bool isOutOfStock = product.stock == 0;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              product.imagePath,
-              width: 90,
-              height: 90,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: 90,
-                  height: 90,
-                  color: Colors.grey.shade200,
-                  child: const Icon(Icons.broken_image, size: 40),
-                );
-              },
+    bool isOutOfStock = product.stock == 0;
+    final wishlistProvider = context.watch<WishlistProvider>();
+  
+    final isInWishlist = wishlistProvider.isInWishlist(product.id);
+
+    return GestureDetector(
+      onTap: () {
+        // ✅ التنقل لصفحة تفاصيل المنتج
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailsPage(
+              productId: product.id,
+              product: product, // ✅ تمرير المنتج للـ cache
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                product.imagePath,
+                width: 90,
+                height: 90,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 90,
+                    height: 90,
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.broken_image, size: 40),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "\$${product.price}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isOutOfStock ? Colors.red : AppColors.primary,
+                    ),
+                  ),
+                  if (isOutOfStock)
+                    const Text(
+                      "Out of Stock",
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+
+            Column(
               children: [
-                Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        isInWishlist ? Icons.favorite : Icons.favorite_border,
+                        color: isInWishlist ? Colors.red : Colors.grey,
+                      ),
+                      onPressed: () {
+                        wishlistProvider.toggleWishlist(product.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              wishlistProvider.isInWishlist(product.id)
+                                  ? "${product.name} removed from wishlist"
+                                  : "${product.name} added to wishlist",
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
+                    //// equipment list botton
+                    IconButton(
+                      icon: Icon(
+                         Icons.bookmark_border,
+                    
+                      ),
+                      onPressed: () {
+                       
+                      },
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  "\$${product.price}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: isOutOfStock ? Colors.red : AppColors.primary,
-                  ),
-                ),
-                if (isOutOfStock)
-                  const Text(
-                    "Out of Stock",
-                    style: TextStyle(color: Colors.red, fontSize: 12),
-                  ),
+                
+                _buildProductButton(product),
               ],
             ),
-          ),
-          _buildProductButton(product),
-        ],
+          ],
+        ),
       ),
     );
   }
