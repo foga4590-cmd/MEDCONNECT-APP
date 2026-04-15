@@ -56,7 +56,7 @@ class CustomRequest {
     
     // لو كان DateTime
     if (date is DateTime) {
-      return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    return "${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}";
     }
     
     // لو كان String
@@ -72,7 +72,7 @@ class CustomRequest {
       'item': item,
       'expires_at': expiresAt,
      // 'created_at' : DateTime.now(),
-      if (rentStartDate != null) 'rent_start_date': _formatDate(rentStartDate) ,
+      if (rentStartDate != null) 'rent_start_date': _formatDate(rentStartDate),
       if (rentEndDate != null) 'rent_end_date': _formatDate(rentEndDate) ,
       'additionalDetails' : additionalDetails,
       'budget' : budget,

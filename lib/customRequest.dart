@@ -49,6 +49,10 @@ class _CustomRequestScreenState extends State<CustomRequestScreen> {
       _showError("End date must be after start date");
       return false;
     }
+    if(rentalEndDate!.isBefore(selectedDate!)){
+      _showError("Rental end date must be after or equil to requst expiry date");
+      return false;
+    }
   }
 
 
@@ -428,7 +432,7 @@ onPressed: () async {
 
   
 String _formatDateForPrint(DateTime date) {
-  return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  return "${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}";
 }
   print ('-------------------------------------');
   print('📤 Sending rental dates:');
@@ -442,7 +446,7 @@ if (rentalStartDate != null && rentalEndDate != null) {
 }
 
 String formatDate(DateTime date) {
-    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    return "${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}";
   }
   String _getRequestTypeForApi(String requestType) {
   switch (requestType.toLowerCase()) {

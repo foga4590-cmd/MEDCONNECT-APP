@@ -472,13 +472,16 @@ Future<CustomRequest> createCustomRequest(CustomRequest request) async {
     } else if (response.statusCode == 401) {
       throw 'Session expired. Please login again.';
     }
+    // else if (response.statusCode == 422) {
+    //   throw 'Rental end date must by after or equal expired date.';
+    // }
      else {
       throw 'Failed to create custom request';
     }
   } catch (e) {
     print('❌22 Error: $e');
     print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    throw 'Error: $e';
+    throw 'Error :';
   }
 }
 // ------------------- Get Custom Requests -------------------
