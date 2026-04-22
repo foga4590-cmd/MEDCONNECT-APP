@@ -1,21 +1,24 @@
-class CategoryModel {
+class Category {
   final int id;
   final String name;
   final String description;
+  final String image;
   final bool isActive;
 
-  CategoryModel({
+  Category({
     required this.id,
     required this.name,
     required this.description,
+    required this.image,
     required this.isActive,
   });
 
-  factory CategoryModel.fromJson(Map<String, dynamic> json) {
-    return CategoryModel(
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
       id: json['id'],
       name: json['name'],
       description: json['description'],
+      image: json['image'],
       isActive: json['is_active'],
     );
   }
