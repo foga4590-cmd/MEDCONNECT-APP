@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:medconnect_app/core/app_colorMycustom.dart';
 //import 'package:medconnect_app/customRequest.dart';
 import 'package:medconnect_app/doctorProfile.dart';
 import 'package:medconnect_app/models/custom_request_model.dart';
@@ -94,7 +93,7 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const doctorProfilePage(
+                builder: (context) => const DoctorProfilePage(
                   //  requestType: "Tools",
                 ),
               ),
@@ -391,7 +390,7 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
                              OutlinedButton(
                               onPressed: () {
                                 // TODO: إلغاء الطلب
-                                _cancelRequest(request);
+                                _showCancelDialog(request);
                               },
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(color: Colors.red),
@@ -525,168 +524,60 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
     return "${date.day}/${date.month}/${date.year}";
   }
 
-  // void _showCancelDialog(CustomRequest request) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (ctx) => AlertDialog(
-  //       title: const Text('Cancel Request'),
-  //       content: const Text('Are you sure you want to cancel this request?'),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(ctx),
-  //           child: const Text('No'),
-  //         ),
-  //         TextButton(
-  //           onPressed: () {
-  //             Navigator.pop(ctx);
-  //             // TODO: استدعاء API الإلغاء
-  //             ScaffoldMessenger.of(context).showSnackBar(
-  //               const SnackBar(content: Text('Request cancelled')),
-  //             );
-  //           },
-  //           child: const Text('Yes', style: TextStyle(color: Colors.red)),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-  Future<void> _cancelRequest(CustomRequest request) async {
-  final shouldCancel = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Cancel Request'),
-      content: const Text('Are you sure you want to cancel this request?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('No'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Yes', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ),
-  );
-
-  if (shouldCancel != true) return;
-
-  setState(() => _isLoading = true);
-
-  try {
-    final result = await _apiService.cancelCustomRequest(request.id);
-    
-    if (result['success'] == true) {
-      // ✅ تحديث الحالة محلياً
-      setState(() {
-        final index = _requests.indexWhere((r) => r.id == request.id);
-        if (index != -1) {
-          _requests[index] = CustomRequest(
-            id: request.id,
-            doctorId: request.doctorId,
-            type: request.type,
-            item: request.item,
-            expiresAt: request.expiresAt,
-            rentStartDate: request.rentStartDate,
-            rentEndDate: request.rentEndDate,
-            status: 'cancelled',
-            additionalDetails: request.additionalDetails,
-            budget: request.budget,
-            createdAt: request.createdAt,
-            updatedAt: DateTime.now(),
-          );
-        }
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request cancelled successfully')),
-      );
-    } else {
-      throw Exception(result['error'] ?? 'Failed to cancel');
-    }
-  } catch (e) {
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+  void _showCancelDialog(CustomRequest request) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancel Request'),
+        content: const Text('Are you sure you want to cancel this request?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              // TODO: استدعاء API الإلغاء
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Request cancelled')),
+              );
+            },
+            child: const Text('Yes', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
-}
 
-  // void _deleteRequest(CustomRequest request) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (ctx) => AlertDialog(
-  //       title: const Text('Delete Request'),
-  //       content: const Text('Are you sure you want to delete this request?'),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(ctx),
-  //           child: const Text('Cancel'),
-  //         ),
-  //         TextButton(
-  //           onPressed: () {
-  //             Navigator.pop(ctx);
-  //             // TODO: استدعاء API الحذف
-  //             setState(() {
-  //               _requests.remove(request);
-  //             });
-  //             ScaffoldMessenger.of(
-  //               context,
-  //             ).showSnackBar(const SnackBar(content: Text('Request deleted')));
-  //           },
-  //           child: const Text('Delete', style: TextStyle(color: Colors.red)),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-  Future<void> _deleteRequest(CustomRequest request) async {
-  final shouldDelete = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Delete Request'),
-      content: const Text('Are you sure you want to permanently delete this request?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Delete', style: TextStyle(color: Colors.red)),
-        ),
-      ],
-    ),
-  );
-
-  if (shouldDelete != true) return;
-
-  setState(() => _isLoading = true);
-
-  try {
-    final result = await _apiService.deleteCustomRequest(request.id);
-    
-    if (result['success'] == true) {
-      // ✅ حذف من القائمة محلياً
-      setState(() {
-        _requests.removeWhere((r) => r.id == request.id);
-        _isLoading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request deleted permanently')),
-      );
-    } else {
-      throw Exception(result['error'] ?? 'Failed to delete');
-    }
-  } catch (e) {
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+  void _deleteRequest(CustomRequest request) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Request'),
+        content: const Text('Are you sure you want to delete this request?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              // TODO: استدعاء API الحذف
+              setState(() {
+                _requests.remove(request);
+              });
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('Request deleted')));
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
-}
 
   // void _reRequest(CustomRequest request) {
   //   // TODO: فتح شاشة CustomRequestScreen مع بيانات الطلب القديم

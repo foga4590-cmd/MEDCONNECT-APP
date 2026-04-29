@@ -6,7 +6,7 @@ import 'package:medconnect_app/massegesScreen.dart';
 import 'package:medconnect_app/myCustomRequests.dart';
 import 'package:medconnect_app/core/app_colorDoctor.dart';
 import 'package:medconnect_app/doctorProfile.dart';
-//import 'package:medconnect_app/homeScreen.dart';
+//import 'package:medconnect_app/Screens/homeScreen.dart';
 
  
  @override
@@ -91,7 +91,7 @@ class DashboardHeader extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) =>  DoctorProfilePage(
+          builder: (context) =>  const DoctorProfilePage(
            
           ) ,
         ),

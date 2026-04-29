@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/checkoutSummary.dart';
+import 'package:medconnect_app/services/Get_Doctor_Profile.dart';
 
 class CheckoutAddressPage extends StatefulWidget {
    final List<CartItem> cartItems;
@@ -273,23 +274,54 @@ class _CheckoutAddressPageState extends State<CheckoutAddressPage> {
             child: const Text("Cancel"),
           ),
           ElevatedButton(
-            onPressed: () {
-              if (titleController.text.isNotEmpty &&
-                  addressController.text.isNotEmpty) {
-                setState(() {
-                  addresses.add({
-                    "title": titleController.text,
-                    "address": addressController.text,
-                    "icon": "location",
-                  });
-                  selectedAddress = addresses.length - 1;
-                });
+           onPressed: () async {
+  if (titleController.text.isEmpty || addressController.text.isEmpty) {
+    return;
+  }
 
-                titleController.clear();
-                addressController.clear();
-                Navigator.pop(context);
-              }
-            },
+  final newAddress = addressController.text;
+
+  // ⏳ Loading
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  final result = await GetDoctorProfile.updateAddress(newAddress);
+
+  Navigator.pop(context); // يقفل الـ loading
+
+  if (result['success']) {
+    setState(() {
+      addresses.add({
+        "title": titleController.text,
+        "address": addressController.text,
+        "icon": "location",
+      });
+      selectedAddress = addresses.length - 1;
+    });
+
+    titleController.clear();
+    addressController.clear();
+
+    Navigator.pop(context); // يقفل الديالوج
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['message']),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['message']),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+},
             child: const Text("Add"),
           ),
         ],

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'otpVerificationScreen.dart';
-import 'services/password_service.dart';
-import 'signInScreen.dart';
-
+import 'package:medconnect_app/signinScreen.dart';
+import 'package:medconnect_app/services/password_service.dart';
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 

@@ -1,3 +1,4 @@
+import 'package:medconnect_app/models/product_image.dart';
 class Product {
   final int id;
   final int supplierId;              // ✅ جديد (مهم للمورد)
@@ -9,7 +10,7 @@ class Product {
   final bool isRentable;
   final DateTime? restockDate;
   final String status;
-  final List<String> images;
+  final List<ProductImage> images;
   final Map<String, dynamic>? supplierData; 
   // ✅ الحقول الجديدة من API
   final String description;
@@ -17,6 +18,7 @@ class Product {
   final String warranty;
   final String? configuration;
   final int setupDuration;
+  
 
   Product({
     required this.id,
@@ -38,13 +40,16 @@ class Product {
     required this.specification,
     required this.warranty,
     required this.setupDuration,
+  
   });
+  
+  
 
   // دالة لتحويل JSON من API إلى Product
   factory Product.fromJson(Map<String, dynamic> json) {
     // استخراج أول صورة
     String firstImage = '';
-    List<String> imagesList = [];
+    List<ProductImage> imagesList = [];
     // ✅ معالجة configuration
   dynamic config = json['configuration'];
   String? configurationValue;
@@ -64,9 +69,9 @@ class Product {
     
     if (json['image'] != null && json['image'] is List) {
       imagesList = (json['image'] as List)
-          .map((img) => img['image'] as String)
+          .map((img) => ProductImage.fromJson(img as Map<String, dynamic>))
           .toList();
-      firstImage = imagesList.isNotEmpty ? imagesList.first : '';
+      firstImage = imagesList.isNotEmpty ? imagesList.first.image : '';
     }
 
     return Product(

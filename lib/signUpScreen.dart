@@ -1,9 +1,9 @@
 // ===================== Sign Up Screen  =====================
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/homeScreen.dart';
-import 'package:medconnect_app/signInScreen.dart';
+import 'package:medconnect_app/signinScreen.dart';
 import 'package:flutter/services.dart';
-import 'package:medconnect_app/services/postRegister.dart';
+import 'package:medconnect_app/services/register_services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:io';

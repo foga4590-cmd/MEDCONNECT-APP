@@ -15,12 +15,14 @@ class Review {
   final String comment;
   final int rating;
   final DateTime date;
+  final int id;
 
   Review({
     required this.name,
     required this.comment,
     required this.rating,
     required this.date,
+    required this.id,
   });
 }
 
@@ -39,7 +41,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   int selectedPurchase = 1; // 0 Rent - 1 Buy
   int selectedTab = 0;
   Product? _product;
-  bool _isLoading = true;
+  bool isLoading = true;
   String? _error;
 
   final ApiService _apiService = ApiService();
@@ -55,7 +57,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     if (widget.product != null) {
       setState(() {
         _product = widget.product;
-        _isLoading = false;
+        isLoading = false;
       });
     }
 
@@ -69,12 +71,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       final freshproduct = await _apiService.fetchProductById(widget.productId);
       setState(() {
         _product = freshproduct;
-        _isLoading = false;
+        isLoading = false;
       });
     } catch (e) {
       setState(() {
         _error = e.toString();
-        _isLoading = false;
+        isLoading = false;
       });
     }
   }
@@ -108,6 +110,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       comment: "High quality and very reliable.",
       rating: 5,
       date: DateTime.now(),
+      id: 1,
     ),
   ];
 
@@ -121,12 +124,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   // ---------------- UI ----------------
   @override
   Widget build(BuildContext context) {
-    f(_isLoading) {
+    (_isLoading) {
       return Scaffold(
         appBar: AppBar(title: const Text("Product Details")),
         body: const Center(child: CircularProgressIndicator()),
       );
-    }
+    };
 
     if (_error != null) {
       return Scaffold(
@@ -426,7 +429,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       itemCount: _product!.images.length,
       onPageChanged: (i) => setState(() => currentImage = i),
       itemBuilder: (_, i) => Image.network(
-        _product!.images[i],
+        _product!.images[i].image,
         fit: BoxFit.contain,
         errorBuilder: (context, error, StackTrace) {
           return const Icon(Icons.broken_image, size: 50);
@@ -1031,6 +1034,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                     comment: reviewController.text,
                     rating: userRating,
                     date: DateTime.now(),
+                    id: reviews.length + 1,
                   ),
                 );
                 reviewController.clear();
@@ -1070,7 +1074,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   type: selectedPurchase == 0 ? "rent" : "buy",
                   dateRange: selectedPurchase == 0 ? "3 Days" : "",
                   daily_rent: 50,
-                ),
+                  id: _product!.id,),
               );
 
               // SnackBar
@@ -1148,23 +1152,23 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 }
 
 // ---------------- SPEC ROW ----------------
-class _SpecRow extends StatelessWidget {
-  final String title;
-  final String value;
+// class _SpecRow extends StatelessWidget {
+//   final String title;
+//   final String value;
 
-  const _SpecRow(this.title, this.value);
+//   const _SpecRow(this.title, this.value);
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(color: Colors.grey)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Padding(
+//       padding: const EdgeInsets.symmetric(vertical: 6),
+//       child: Row(
+//         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//         children: [
+//           Text(title, style: const TextStyle(color: Colors.grey)),
+//           Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+//         ],
+//       ),
+//     );
+//   }
+// }

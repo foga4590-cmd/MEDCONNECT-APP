@@ -4,11 +4,12 @@ import 'package:medconnect_app/introScreen.dart';
 import 'package:medconnect_app/models/category.dart';
 import 'package:medconnect_app/productDetails.dart';
 import 'package:medconnect_app/models/product.dart';
-import 'package:medconnect_app/doctorProfile.dart';
+import 'package:medconnect_app/doctorAccount.dart';
 import 'package:medconnect_app/services/api_service.dart';
-import 'package:medconnect_app/signInScreen.dart';
-import 'package:provider/provider.dart';
-import 'package:medconnect_app/providers/wishlist_provider.dart';
+import 'package:medconnect_app/services/search_services.dart';
+import '../models/Search_model.dart';
+import '../services/cart_services.dart';
+
 
 // ---------------------
 // GLOBAL LISTS
@@ -32,13 +33,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  List<ProductModel> searchResults = [];
+bool isSearching = false;
+int? selectedCategoryId;
+bool showCategories = false;
+final CartService _cartService = CartService();
+
+// دي جاية من API بتاعتك
+List<CategoryApiModel> categoriesApi = [];
+bool isLoadingCategoriesApi = false;
   final TextEditingController _searchController = TextEditingController();
   List<Product> displayedProducts = [];
   List<Product> _allProducts = [];
-  int _currentPage = 1;
-  int _totalPages = 1;
-  bool _isLoadingMore = false;
-  bool _hasMore = true;
+int _currentPage = 1;
+int _totalPages = 1;
+bool _isLoadingMore = false;
+bool _hasMore = true;
   //########################
 
   // Categories variables
@@ -51,78 +61,76 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _productsError;
 
   final ApiService _apiService = ApiService();
-  final ScrollController _scrollController = ScrollController();
+final ScrollController _scrollController = ScrollController();
   @override
   void initState() {
     super.initState();
     _loadCategories();
+    fetchCategoriesApi();
 
     _loadProducts();
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels ==
-              _scrollController.position.maxScrollExtent &&
-          _hasMore &&
-          !_isLoadingMore) {
-        _loadProducts(loadMore: true);
-      }
+    if (_scrollController.position.pixels == 
+        _scrollController.position.maxScrollExtent && 
+        _hasMore && !_isLoadingMore) {
+      _loadProducts(loadMore: true);
+    }
+  });
+  }
+@override
+void dispose() {
+  _scrollController.dispose();
+  super.dispose();
+}
+ Future<void> _loadProducts({bool loadMore = false}) async {
+  if (ApiService.token == null) {
+    setState(() {
+      _productsError = 'Please login first';
+      _isLoadingProducts = false;
+    });
+    return;
+  }
+  
+  if (!loadMore) {
+    setState(() {
+      _isLoadingProducts = true;
+      _productsError = null;
+      _currentPage = 1;
+      _allProducts = [];
+    });
+  } else {
+    setState(() {
+      _isLoadingMore = true;
     });
   }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
+  
+  try {
+    final result = await _apiService.fetchProductsWithPagination(
+      page: _currentPage,
+      perPage: 10,
+    );
+    
+    setState(() {
+      if (loadMore) {
+        _allProducts.addAll(result['products']);
+      } else {
+        _allProducts = result['products'];
+      }
+      displayedProducts = List.from(_allProducts);
+      _totalPages = result['lastPage'];
+      _hasMore = _currentPage < _totalPages;
+      _currentPage++;
+      _isLoadingProducts = false;
+      _isLoadingMore = false;
+    });
+  } catch (e) {
+    setState(() {
+      _productsError = e.toString();
+      _isLoadingProducts = false;
+      _isLoadingMore = false;
+    });
   }
-
-  Future<void> _loadProducts({bool loadMore = false}) async {
-    if (ApiService.token == null) {
-      setState(() {
-        _productsError = 'Please login first';
-        _isLoadingProducts = false;
-      });
-      return;
-    }
-
-    if (!loadMore) {
-      setState(() {
-        _isLoadingProducts = true;
-        _productsError = null;
-        _currentPage = 1;
-        _allProducts = [];
-      });
-    } else {
-      setState(() {
-        _isLoadingMore = true;
-      });
-    }
-
-    try {
-      final result = await _apiService.fetchProductsWithPagination(
-        page: _currentPage,
-        perPage: 10,
-      );
-
-      setState(() {
-        if (loadMore) {
-          _allProducts.addAll(result['products']);
-        } else {
-          _allProducts = result['products'];
-        }
-        displayedProducts = List.from(_allProducts);
-        _totalPages = result['lastPage'];
-        _hasMore = _currentPage < _totalPages;
-        _currentPage++;
-        _isLoadingProducts = false;
-        _isLoadingMore = false;
-      });
-    } catch (e) {
-      setState(() {
-        _productsError = e.toString();
-        _isLoadingProducts = false;
-        _isLoadingMore = false;
-      });
-    }
-  }
+}
 
   Future<void> _loadCategories() async {
     // ✅ التأكد من وجود توكن
@@ -166,21 +174,39 @@ class _HomeScreenState extends State<HomeScreen> {
   //     super.dispose();
   //   }
 
-  void _searchProduct(String query) {
+ Future<void> _searchProduct(String query) async {
+  final result = await SearchService.searchProducts(
+    query,
+    selectedCategoryId,
+  );
+
+  if (result['success']) {
     setState(() {
-      if (query.isEmpty) {
-        displayedProducts = List.from(_allProducts);
-      } else {
-        displayedProducts = _allProducts
-            .where(
-              (p) =>
-                  p.name.toLowerCase().contains(query.toLowerCase()) ||
-                  p.brand.toLowerCase().contains(query.toLowerCase()),
-            )
-            .toList();
-      }
+      searchResults = result['data'];
+      isSearching = query.isNotEmpty || selectedCategoryId != null;
     });
   }
+}
+Future<void> fetchCategoriesApi() async {
+  setState(() {
+    isLoadingCategoriesApi = true;
+  });
+
+  try {
+    final result = await CategorySearch.getCategories();
+
+    setState(() {
+      categoriesApi = result;
+    });
+  } catch (e) {
+    print(e);
+  }
+
+  setState(() {
+    isLoadingCategoriesApi = false;
+  });
+}
+
 
   //int _selectedIndex = 0;
 
@@ -202,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const doctorProfilePage()),
+                MaterialPageRoute(builder: (_) =>  doctorAccountPage()),
               );
 
               // افتح صفحة البروفايل
@@ -275,16 +301,79 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             _buildSearchBar(),
             const SizedBox(height: 20),
-            _searchController.text.isEmpty
-                ? _buildHomeSections()
-                : _searchResults(),
+            Row(
+  children: [
+    GestureDetector(
+      onTap: () {
+        setState(() {
+          showCategories = !showCategories;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: const [
+            Text("Category"),
+            Icon(Icons.keyboard_arrow_down),
+          ],
+        ),
+      ),
+    ),
+  ],
+),
+if (showCategories) _buildCategoryListApi(),
+            isSearching
+    ? _searchResultsApi()
+    : _buildHomeSections(),
           ],
         ),
       ),
     );
   }
+  Widget _searchResultsApi() {
+  if (searchResults.isEmpty) {
+    return const Text("No products found");
+  }
+
+  return GridView.builder(
+    itemCount: searchResults.length,
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      childAspectRatio: 0.60,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+    ),
+    itemBuilder: (context, index) {
+      final product = searchResults[index];
+
+      return Container(
+        color: Colors.white,
+        child: Column(
+          children: [
+            Image.network(
+              product.image.isNotEmpty
+                  ? product.image[0].image
+                  : "",
+              height: 120,
+              fit: BoxFit.cover,
+            ),
+            Text(product.name),
+            Text("${product.price} EGP"),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildSearchBar() {
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -292,8 +381,10 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextField(
+        onChanged: (value) {
+  _searchProduct(value);
+},
         controller: _searchController,
-        onChanged: _searchProduct,
         decoration: const InputDecoration(
           border: InputBorder.none,
           hintText: "Search For Equipment",
@@ -301,7 +392,50 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+    
+    
   }
+  Widget _buildCategoryListApi() {
+  if (isLoadingCategoriesApi) {
+    return const Center(child: CircularProgressIndicator());
+  }
+
+  if (categoriesApi.isEmpty) {
+    return const Text("No categories found");
+  }
+
+  return Container(
+    margin: const EdgeInsets.only(top: 10),
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Column(
+      children: categoriesApi.map((cat) {
+        return Row(
+          children: [
+            Checkbox(
+              value: selectedCategoryId == cat.id,
+              onChanged: (value) {
+                setState(() {
+                  selectedCategoryId =
+                      (selectedCategoryId == cat.id) ? null : cat.id;
+                  showCategories = false;
+                });
+
+                // 🔥 فلترة من API
+                _searchProduct(_searchController.text);
+              },
+            ),
+            Text(cat.name),
+          ],
+        );
+      }).toList(),
+    ),
+  );
+}
+  
 
   // ---------------------
   // أقسام الصفحة الرئيسية
@@ -341,10 +475,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _categoryItem({required Category category}) {
     return GestureDetector(
-      onTap: () {
-        // التنقل لشاشة تفاصيل القسم
-        print('Category tapped: ${category.name}');
-      },
+     onTap: () {
+  setState(() {
+    selectedCategoryId = category.id;
+  });
+
+  _searchProduct(_searchController.text);
+},
       child: Column(
         children: [
           Container(
@@ -451,79 +588,61 @@ class _HomeScreenState extends State<HomeScreen> {
   // Grid Products
   // ---------------------
   Widget _featuredGrid() {
-    if (_isLoadingProducts && _allProducts.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_productsError != null && _allProducts.isEmpty) {
-      return Center(
-        child: Column(
-          children: [
-            Text('Error: $_productsError'),
-            SizedBox(height: 10,),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.blueAccent,
-              ),
-              onPressed: () => _loadProducts(),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_allProducts.isEmpty) {
-      return const Center(child: Text('No products found.'));
-    }
-
-    return Column(
-      children: [
-        GridView.builder(
-          controller: _scrollController,
-          itemCount: displayedProducts.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.60,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+  if (_isLoadingProducts && _allProducts.isEmpty) {
+    return const Center(child: CircularProgressIndicator());
+  }
+  
+  if (_productsError != null && _allProducts.isEmpty) {
+    return Center(
+      child: Column(
+        children: [
+          Text('Error: $_productsError'),
+          ElevatedButton(
+            onPressed: () => _loadProducts(),
+            child: const Text('Retry'),
           ),
-          itemBuilder: (context, index) {
-            return _productCard(displayedProducts[index]);
-          },
-        ),
-        if (_isLoadingMore)
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: CircularProgressIndicator(),
-          ),
-      ],
+        ],
+      ),
     );
   }
+  
+  if (_allProducts.isEmpty) {
+    return const Center(child: Text('No products found.'));
+  }
 
+  return Column(
+    children: [
+      GridView.builder(
+        controller: _scrollController,
+        itemCount: displayedProducts.length,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.60,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemBuilder: (context, index) {
+          return _productCard(displayedProducts[index]);
+        },
+      ),
+      if (_isLoadingMore)
+        const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: CircularProgressIndicator(),
+        ),
+    ],
+  );
+}
   // ---------------------
   // PRODUCT CARD
   // ---------------------
   Widget _productCard(Product p) {
-    final wishlistProvider = Provider.of<WishlistProvider>(
-      context,
-      listen: true,
-    );
-    final isInWishlist = wishlistProvider.isInWishlist(p.id);
-
-    // bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
+    bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
     bool isInequipmentList = equipmentListGlobal.any(
       (i) => i["name"] == p.name,
     );
-
-    String supplierName = '';
-    if (p.supplierData != null && p.supplierData!['company_name'] != null) {
-      supplierName = p.supplierData!['company_name'];
-    }
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -539,8 +658,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          ProductDetailsPage(productId: p.id, product: p),
+                      builder: (_) => ProductDetailsPage(product: p , productId: p.id,),
                     ),
                   );
                 },
@@ -549,12 +667,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
                     p.imagePath,
-                    height: MediaQuery.of(context).size.height * 0.17,
+                    height: MediaQuery.of(context).size.height * 0.12,
                     width: double.infinity,
-                    fit: BoxFit.fill,
+                    fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        height: MediaQuery.of(context).size.height * 0.17,
+                        height: MediaQuery.of(context).size.height * 0.12,
                         color: Colors.grey.shade200,
                         child: const Icon(
                           Icons.broken_image,
@@ -589,16 +707,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8.0,
-                  vertical: 4,
-                ),
-                child: Text(
-                  supplierName,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ),
+              
 
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -658,14 +767,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 // ❤️ Wishlist
                 GestureDetector(
                   onTap: () {
-                    wishlistProvider.toggleWishlist(p.id);
+                    setState(() {
+                      if (isInWishlist) {
+                        wishListGlobal.removeWhere((i) => i["name"] == p.name);
+                      } else {
+                        wishListGlobal.add({
+                          "name": p.name,
+                          "price": p.price,
+                          "image": p.imagePath,
+                        });
+                      }
+                    });
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          wishlistProvider.isInWishlist(p.id)
-                              ? "${p.name} added to wishlist"
-                              : "${p.name} removed from wishlist",
+                          isInWishlist
+                              ? "${p.name} removed from wishlist"
+                              : "${p.name} added to wishlist",
                         ),
                       ),
                     );
@@ -710,7 +829,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   },
                   child: Icon(
-                    Icons.bookmark_border, // أو playlist_add
+                    Icons.notifications, // أو playlist_add
                     color: isInequipmentList ? Colors.blue : Colors.black,
                     size: 26,
                   ),
@@ -781,27 +900,42 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              padding:  EdgeInsets.symmetric(vertical: 14 ),
             ),
-            onPressed: () {
-              cartItemsGlobal.add(
-                CartItem(
-                  daily_rent: 0,
-                  name: p.name,
-                  image: p.imagePath,
-                  quantity: 1,
-                  price: p.price,
-                  type: 'buy',
-                  dateRange: '',
-                ),
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("${p.name} added to cart (Buy)")),
-              );
-            },
+           onPressed: () async {
+  final result = await _cartService.addToCart(
+    productId: p.id,
+    quantity: 1,
+    type: "sale",
+  );
+
+  if (result['success'] != false) {
+    // ✅ ضيفه local برضو لو عايز
+    cartItemsGlobal.add(
+      CartItem(
+        daily_rent: 0,
+        name: p.name,
+        image: p.imagePath,
+        quantity: 1,
+        price: p.price,
+        type: 'sale',
+        dateRange: '',
+        id: p.id,
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("${p.name} added to cart ✅")),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result['message'] ?? "Error")),
+    );
+  }
+},
             child: const Text(
               "Add To Cart",
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold , fontSize: 12),
             ),
           ),
         ),
@@ -826,6 +960,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     type: 'rent',
                     dateRange: '',
                     daily_rent: 50,
+                    id: p.id,
                   ),
                 );
 
@@ -833,7 +968,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   SnackBar(content: Text("${p.name} added to cart (Rent)")),
                 );
               },
-              child: const Text("Rent", style: TextStyle(color: Colors.white)),
+              child: const Text("Rent", style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold , fontSize: 12)),
             ),
           ),
         ],
@@ -844,27 +979,27 @@ class _HomeScreenState extends State<HomeScreen> {
   // ---------------------
   // Search Results
   // ---------------------
-  Widget _searchResults() {
-    if (displayedProducts.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(20),
-        child: Text("No products found."),
-      );
-    }
+  // Widget _searchResults() {
+  //   if (displayedProducts.isEmpty) {
+  //     return const Padding(
+  //       padding: EdgeInsets.all(20),
+  //       child: Text("No products found."),
+  //     );
+  //   }
 
-    return GridView.builder(
-      itemCount: displayedProducts.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.60,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemBuilder: (context, index) {
-        return _productCard(displayedProducts[index]);
-      },
-    );
-  }
+  //   return GridView.builder(
+  //     itemCount: displayedProducts.length,
+  //     shrinkWrap: true,
+  //     physics: const NeverScrollableScrollPhysics(),
+  //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+  //       crossAxisCount: 2,
+  //       childAspectRatio: 0.60,
+  //       crossAxisSpacing: 12,
+  //       mainAxisSpacing: 12,
+  //     ),
+  //     itemBuilder: (context, index) {
+  //       return _productCard(displayedProducts[index]);
+  //     },
+  //   );
+  // }
 }

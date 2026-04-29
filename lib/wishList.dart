@@ -234,6 +234,7 @@ class _WishlistPageState extends State<WishlistPage> {
             type: 'rent',
             dateRange: '3 Days',
             daily_rent:0,
+            id: product.id,
           ),
         );
 
@@ -252,6 +253,7 @@ class _WishlistPageState extends State<WishlistPage> {
             price: product.price,
             type: 'buy',
             dateRange: '',
+            id: product.id,
           ),
         );
 

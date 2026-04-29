@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/core/app_colorCustom.dart';
+import 'package:medconnect_app/doctorAccount.dart';
 import 'package:medconnect_app/myCustomRequests.dart';
-import 'package:medconnect_app/doctorProfile.dart';
 import 'package:medconnect_app/models/custom_request_model.dart';
 //import 'package:medconnect_app/data/custom_request_store.dart';
 import 'package:medconnect_app/services/api_service.dart';
@@ -128,15 +128,13 @@ Widget datePickerField({
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () {
+          onPressed: () =>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const doctorProfilePage(),
+                builder: (_) =>  doctorAccountPage(),
               ),
-            
-            );
-          }
+            ),
         ),
         title: const Text(
           "Custom Request",

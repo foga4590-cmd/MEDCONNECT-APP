@@ -1,4 +1,4 @@
- class ProductImage {
+class ProductImage {
   final int id;
   final int productId;
   final String image;
@@ -25,3 +25,4 @@
     );
   }
  }
+ 

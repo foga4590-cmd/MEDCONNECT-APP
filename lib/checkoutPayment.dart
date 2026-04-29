@@ -9,8 +9,6 @@ class CheckoutPaymentPage extends StatefulWidget {
   @override
   State<CheckoutPaymentPage> createState() => _CheckoutPaymentPageState();
 }
-final TextEditingController discountController = TextEditingController();
-double discountAmount = 0;
 class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   String selectedPayment =
       "cod"; // cod = Cash on Delivery, online = Online Payment
@@ -49,9 +47,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
 
                     /// ===== Discount Code =====
                
-                    _buildDiscountSection(),
 
-               const SizedBox(height: 24),
 
                     /// ===== Order Summary =====///
                  
@@ -185,80 +181,8 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       ),
     );
   }
-  Widget _buildDiscountSection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        "Discount Code",
-        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-      ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: discountController,
-              decoration: InputDecoration(
-                hintText: "Enter promo code",
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0D6EFD),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            ),
-            onPressed: _applyDiscount,
-            child: const Text(
-              "Apply",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-      if (discountAmount > 0) ...[
-        const SizedBox(height: 8),
-        Text(
-          "Discount Applied: -\$${discountAmount.toStringAsFixed(2)}",
-          style: const TextStyle(
-            color: Colors.green,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ]
-    ],
-  );
-}
-void _applyDiscount() {
-  setState(() {
-    if (discountController.text.trim().toLowerCase() == "med10") {
-      discountAmount = 10;
-    } else {
-      discountAmount = 0;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid Promo Code")),
-      );
-    }
-  });
-}
+  
+
   // ================= Order Summary =================
 
   Widget _buildOrderSummary() {
@@ -270,7 +194,7 @@ void _applyDiscount() {
     double insurance = 50;
     double delivery = 25;
     
-double total = subtotal + insurance + delivery - discountAmount;
+double total = subtotal + insurance + delivery ;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
@@ -290,7 +214,7 @@ double total = subtotal + insurance + delivery - discountAmount;
                         borderRadius: BorderRadius.circular(8),
                         color: Colors.grey.shade200,
                       ),
-                      child: Image.asset(item.image, fit: BoxFit.contain),
+                      child: Image.network(item.image, fit: BoxFit.contain),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -331,8 +255,6 @@ double total = subtotal + insurance + delivery - discountAmount;
           _priceRow('Subtotal', '\$${subtotal.toStringAsFixed(2)}'),
           _priceRow('Insurance', '\$${insurance.toStringAsFixed(2)}'),
           _priceRow('Delivery', '\$${delivery.toStringAsFixed(2)}'),
-          if (discountAmount > 0)
-  _priceRow('Discount', '-\$${discountAmount.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
           _priceRow('Total', '\$${total.toStringAsFixed(2)}', isTotal: true),
         ],

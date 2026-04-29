@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/checkoutAddress.dart';
-import 'package:medconnect_app/homeScreen.dart';
-//import 'package:medconnect_app/checkoutAddress.dart';
 import 'package:medconnect_app/mainScreen.dart';
+import 'package:medconnect_app/services/cart_services.dart';
+import 'package:medconnect_app/homeScreen.dart';
 
 class CartItem {
+  final int id; // 🔥 مهم
   final String name;
   final String image;
   int quantity;
   final double price;
+  final String type;
 
-  String? dateRange;
   final double daily_rent;
+  String? dateRange;
   DateTime? rStartDate;
   DateTime? rEndDate;
 
-  String type;
   CartItem({
+    required this.id,
     required this.name,
     required this.image,
     required this.quantity,
     required this.price,
-    required this.dateRange,
     required this.type,
     required this.daily_rent,
+    this.dateRange,
   });
 }
 
@@ -35,16 +37,70 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  int selectedCartTab = 0; 
+  final CartService cartService = CartService();
+
+  late Future<List<dynamic>> cartItems;
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadCart();
+  }
+
+  Future<void> loadCart() async {
+    try {
+      final items = await getCartItemsMapped();
+
+      setState(() {
+        cartItemsGlobal = items;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to load cart")));
+    }
+  }
+
+  Future<List<CartItem>> getCartItemsMapped() async {
+    final data = await cartService.getCartItems();
+    return data.map<CartItem>((item) {
+      final product = item['product'];
+
+      if (product['image']['image'] != null &&
+          product['image']['image'] is List &&
+          product['image']['image'].isNotEmpty) {
+        final firstImage = product['image']['image'][0];
+        print("First image object: $firstImage"); // 🔍
+
+      }
+      return CartItem(
+        id: item['id'],
+        name: product['name'],
+        image:
+            (product['image']['image'] != null &&
+                product['image']['image'] is List &&
+                product['image']['image'].isNotEmpty &&
+                product['image']['image'][0]['image'] != null)
+            ? product['image']['image'][0]['image']
+            : "",
+        quantity: item['quantity'],
+        price: double.parse(product['price'].toString()),
+        type: item['type'],
+        daily_rent: 0, // مش موجود في API حالياً
+      );
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final filteredItems = cartItemsGlobal.where((item) {
-      if (selectedCartTab == 0) {
-        return item.type.toLowerCase() == 'buy';
-      } else {
-        return item.type.toLowerCase() == 'rent';
-      }
-    }).toList();
+   final filteredItems = cartItemsGlobal;
 
     return Scaffold(
       appBar: AppBar(
@@ -65,12 +121,13 @@ class _CartPageState extends State<CartPage> {
         title: const Text(
           'My Cart',
           style: TextStyle(fontWeight: FontWeight.bold),
-
         ),
       ),
       backgroundColor: const Color(0xFFF4F4F4),
 
-      body: cartItemsGlobal.isEmpty
+      body: (isLoading)
+          ? Center(child: CircularProgressIndicator())
+          : cartItemsGlobal.isEmpty
           ? const Center(
               child: Text("Your cart is empty", style: TextStyle(fontSize: 16)),
             )
@@ -78,7 +135,7 @@ class _CartPageState extends State<CartPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildCartToggle(),
+                 
                   const SizedBox(height: 16),
 
                   for (int i = 0; i < filteredItems.length; i++) ...[
@@ -93,7 +150,7 @@ class _CartPageState extends State<CartPage> {
                 ],
               ),
             ),
-            bottomSheet: cartItemsGlobal.isEmpty
+      bottomSheet: cartItemsGlobal.isEmpty
           ? null
           : Padding(
               padding: const EdgeInsets.all(16),
@@ -107,14 +164,17 @@ class _CartPageState extends State<CartPage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-onPressed: () {
+                  onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => CheckoutAddressPage(cartItems: cartItemsGlobal)),
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            CheckoutAddressPage(cartItems: cartItemsGlobal),
+                      ),
                     );
                   },
-                  child: Text(
-                    selectedCartTab == 0 ? "pay to buy" : "pay to rent",
+                 child: const Text(
+  "Pay to buy",
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -124,59 +184,16 @@ onPressed: () {
                 ),
               ),
             ),
-          
     );
   }
 
-  Widget _buildCartToggle() {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        children: [_toggleItem("Purchase", 0), _toggleItem("Rental", 1)],
-      ),
-    );
-  }
+  
 
-  Widget _toggleItem(String title, int index) {
-    final bool isSelected = selectedCartTab == index;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() => selectedCartTab = index);
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? const Color.fromARGB(255, 255, 255, 255)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Center(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.black : Colors.grey,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  
 
   // ================= CART ITEM =================
-  DateTime? rentStartDate;
-  DateTime? rentEndDate;
-
+  
   Widget buildCartItem({required CartItem item, required int index}) {
-    final isRent = item.type == 'rent';
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -201,29 +218,18 @@ onPressed: () {
                   ),
                 ),
 
-                if (!isRent)
-                  Text(
-                    '\$${item.price.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                 
 
                 const SizedBox(height: 4),
 
-                if (isRent)
-                  Text(
-                    "\$${item.daily_rent.toString()} / day",
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                  ),
+                 Text(
+  '\$${item.price.toStringAsFixed(2)}',
+  style: const TextStyle(fontWeight: FontWeight.bold),
+),
 
                 const SizedBox(height: 4),
-                if (isRent)
                   Column(
-                    children: [
-                      _dateBox("Start Date", true),
 
-                      const SizedBox(height: 10),
-                      _dateBox("End Date", false),
-                    ],
                   ),
                 const SizedBox(height: 4),
                 Container(
@@ -231,21 +237,8 @@ onPressed: () {
                     horizontal: 8,
                     vertical: 4,
                   ),
-                  decoration: BoxDecoration(
-                    color: isRent
-                        ? Colors.blue.shade100
-                        : Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    isRent ? "rental" : "Purchase",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isRent
-                          ? Colors.blue.shade700
-                          : Colors.green.shade700,
-                    ),
-                  ),
+                 
+                 
                 ),
               ],
             ),
@@ -255,50 +248,75 @@ onPressed: () {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (isRent) ...[
+                     ...[
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _qtyButton(Icons.add, () {
-                        setState(() => item.quantity++);
+                      _qtyButton(Icons.add, () async {
+                        await cartService.updateCart(
+                          cartId: item.id,
+                          quantity: item.quantity + 1,
+                        );
+                        await loadCart();
                       }),
+
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Text('${item.quantity}'),
                       ),
 
-                      _qtyButton(Icons.remove, () {
+                      _qtyButton(Icons.remove, () async {
                         if (item.quantity > 1) {
-                          setState(() => item.quantity--);
+                          await cartService.updateCart(
+                            cartId: item.id,
+                            quantity: item.quantity - 1,
+                          );
+                          await loadCart();
                         }
                       }),
                     ],
                   ),
                 ],
-                if (!isRent)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _qtyButton(Icons.add, () {
-                        setState(() => item.quantity++);
-                      }),
+                     
+
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Text('${item.quantity}'),
                       ),
-                      _qtyButton(Icons.remove, () {
-                        if (item.quantity > 1) {
-                          setState(() => item.quantity--);
-                        }
-                      }),
+
+                     
                     ],
                   ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: () {
-                    setState(() {
-                      cartItemsGlobal.removeAt(index);
-                    });
+                  onPressed: () async {
+                    final confirm = await showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text("Delete Item"),
+                        content: Text(
+                          "Are you sure you want to remove this item?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: Text("Delete"),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      await cartService.deleteCartItem(cartId: item.id);
+                      await loadCart();
+                    }
                   },
                 ),
               ],
@@ -319,7 +337,15 @@ onPressed: () {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.network(path, fit: BoxFit.contain),
+        child: Image.network(
+  path,
+   
+  fit: BoxFit.cover,
+  errorBuilder: (_, error, __) {
+    print("IMAGE ERROR: $error");
+    return Icon(Icons.broken_image);
+  },
+)
       ),
     );
   }
@@ -343,16 +369,10 @@ onPressed: () {
   // ================= ORDER SUMMARY =================
 
   Widget buildOrderSummary() {
-    double subtotal = cartItemsGlobal
-        .where((item) {
-          if (selectedCartTab == 0) {
-            return item.type.toLowerCase() == 'buy';
-          } else {
-            return item.type.toLowerCase() == 'rent';
-          }
-        })
-        .fold(0, (sum, item) => sum + (item.price * item.quantity));
-
+        double subtotal = cartItemsGlobal.fold(
+  0,
+  (sum, item) => sum + (item.price * item.quantity),
+);
     double taxes = subtotal * 0.05;
     double total = subtotal + taxes;
 
@@ -396,45 +416,4 @@ onPressed: () {
     );
   }
 
-  Widget _dateBox(String title, bool isStart) => GestureDetector(
-    onTap: () async {
-      final picked = await showDatePicker(
-        context: context,
-        firstDate: DateTime.now(),
-        lastDate: DateTime(2030),
-        initialDate: DateTime.now(),
-      );
-      if (picked != null) {
-        setState(() {
-          if (isStart) {
-            rentStartDate = picked;
-          } else {
-            rentEndDate = picked;
-          }
-        });
-      }
-    },
-    child: Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.calendar_month, size: 15),
-          const SizedBox(width: 8),
-          Text(
-            isStart
-                ? (rentStartDate == null
-                      ? title
-                      : rentStartDate!.toString().split(" ")[0])
-                : (rentEndDate == null
-                      ? title
-                      : rentEndDate!.toString().split(" ")[0]),
-          ),
-        ],
-      ),
-    ),
-  );
 }

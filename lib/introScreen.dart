@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:medconnect_app/signupScreen.dart';
-import 'package:medconnect_app/signInScreen.dart';
+import 'package:medconnect_app/signUpScreen.dart';
+import 'package:medconnect_app/signinScreen.dart';
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});

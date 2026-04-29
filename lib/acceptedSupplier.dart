@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/core/app_colorAccepted.dart';
-import 'package:medconnect_app/responseScreen.dart';
 
 class AcceptedSupplierDetailsPage extends StatelessWidget {
   const AcceptedSupplierDetailsPage({super.key});

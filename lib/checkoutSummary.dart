@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/checkoutPayment.dart';
 
 // ========== صفحة الـ Summary ==========
 class CheckoutSummaryPage extends StatelessWidget {
-  final List cartItems ;
+  final List<CartItem> cartItems;
   final double subtotal;
   final double taxes;
   final double total;
-final Map<String, String> selectedAddress;
+  final Map<String, String> selectedAddress;
 
-  const CheckoutSummaryPage({super.key,
-  required this.selectedAddress,
-  required this.cartItems,
-  required this.subtotal,
-  required this.taxes,
-  required this.total,
+  const CheckoutSummaryPage({
+    super.key,
+    required this.selectedAddress,
+    required this.cartItems,
+    required this.subtotal,
+    required this.taxes,
+    required this.total,
   });
 
   @override
@@ -50,7 +52,7 @@ final Map<String, String> selectedAddress;
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildDeliveryCard(), // 🔹 هيعرض العنوان المختار الآن
+                    _buildDeliveryCard(context), // 🔹 هيعرض العنوان المختار الآن
                     const SizedBox(height: 24),
                     const Text(
                       'Order Summary',
@@ -110,7 +112,7 @@ final Map<String, String> selectedAddress;
   }
 
   // ========== Delivery Card ==========
-  Widget _buildDeliveryCard() {
+  Widget _buildDeliveryCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
@@ -143,16 +145,24 @@ final Map<String, String> selectedAddress;
               ],
             ),
           ),
-          TextButton(onPressed: () {}, child: const Text('Change')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Change'),
+          ),
         ],
       ),
     );
   }
 
   // ========== Order Summary ==========
+
   Widget _buildOrderSummary() {
     double subtotal = cartItems.fold(
-        0, (sum, item) => sum + (item.price * item.quantity));
+      0,
+      (sum, item) => sum + (item.price * item.quantity),
+    );
     double insurance = 50;
     double delivery = 25;
     double total = subtotal + insurance + delivery;
@@ -176,10 +186,7 @@ final Map<String, String> selectedAddress;
                         borderRadius: BorderRadius.circular(8),
                         color: Colors.grey.shade200,
                       ),
-                      child: Image.asset(
-                        item.image,
-                        fit: BoxFit.contain,
-                      ),
+                      child: Image.network(item.image, fit: BoxFit.contain),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -194,7 +201,9 @@ final Map<String, String> selectedAddress;
                           Text(
                             'Qty: ${item.quantity}',
                             style: const TextStyle(
-                                color: Colors.grey, fontSize: 12),
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -258,15 +267,12 @@ final Map<String, String> selectedAddress;
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF0D6EFD),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => CheckoutPaymentPage(),
-            ),
+            MaterialPageRoute(builder: (_) => CheckoutPaymentPage()),
           );
         },
         child: const Text(

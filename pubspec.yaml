@@ -10,16 +10,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   provider: ^6.1.1
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.3.2
   badges: ^3.1.2
-  http: ^1.6.0
+  mime: ^1.0.5
+  http_parser: ^4.0.2
+  http: ^0.13.5
+  flutter_toastr: ^1.0.0
   image_picker: ^1.2.1
   fluttertoast: ^9.0.0
-  mime: ^2.0.0
-  http_parser: ^4.1.2
-  
 
 
 dev_dependencies:

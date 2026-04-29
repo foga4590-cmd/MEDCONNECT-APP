@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/core/app_colorAccepted.dart';
 import 'package:medconnect_app/mainScreen.dart';
-//import 'package:medconnect_app/mainScreen.dart';
-//import 'homeScreen.dart';
+//import 'package:medconnect_app/Screens/mainScreen.dart';
+//import 'package:medconnect_app/Screens/homeScreen.dart';
 
 //import 'homeScreen.dart'; // عشان نقدر نرجع على HomeScreen ونشغل search
 

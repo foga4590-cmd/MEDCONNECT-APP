@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/mainScreen.dart';
-import 'package:medconnect_app/signupScreen.dart';
-import '../services/api_service.dart'; // استيراد ApiService
+import 'package:medconnect_app/signUpScreen.dart';
+import 'package:medconnect_app/forgotPasswordScreen.dart';
+import '../services/api_service.dart';
+ // استيراد ApiService
 
 ////////hagertestingacc@gmail.com
 ///P@ssword123
@@ -314,7 +316,14 @@ class _SignInScreenState extends State<SignInScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          );
+                        },
                         child: const Text(
                           'Forgot Your Password?',
                           style: TextStyle(

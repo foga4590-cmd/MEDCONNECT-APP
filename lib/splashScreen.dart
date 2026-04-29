@@ -1,6 +1,5 @@
 // ===================== Splash Screen =====================
 import 'package:flutter/material.dart';
-import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/introScreen.dart';
 import 'package:medconnect_app/main.dart';
 import 'package:medconnect_app/mainScreen.dart';
