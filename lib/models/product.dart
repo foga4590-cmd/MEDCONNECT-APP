@@ -1,4 +1,4 @@
-import 'package:medconnect_app/models/product_image.dart';
+import 'package:medconnect_app/models/product_image.dart'; // change by mohamed
 class Product {
   final int id;
   final int supplierId;              // ✅ جديد (مهم للمورد)
@@ -10,7 +10,8 @@ class Product {
   final bool isRentable;
   final DateTime? restockDate;
   final String status;
-  final List<ProductImage> images;
+  // final List<String> images;  
+  final List<ProductImage> images;   // change by mohamed
   final Map<String, dynamic>? supplierData; 
   // ✅ الحقول الجديدة من API
   final String description;

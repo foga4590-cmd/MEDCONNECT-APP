@@ -5,11 +5,12 @@ import 'package:medconnect_app/models/category.dart';
 import 'package:medconnect_app/productDetails.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/doctorAccount.dart';
+import 'package:medconnect_app/providers/wishlist_provider.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/services/search_services.dart';
+import 'package:provider/provider.dart';
 import '../models/Search_model.dart';
 import '../services/cart_services.dart';
-
 
 // ---------------------
 // GLOBAL LISTS
@@ -33,23 +34,27 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<ProductModel> searchResults = [];
-bool isSearching = false;
-int? selectedCategoryId;
-bool showCategories = false;
-final CartService _cartService = CartService();
 
-// دي جاية من API بتاعتك
-List<CategoryApiModel> categoriesApi = [];
-bool isLoadingCategoriesApi = false;
+  //#############################
+  // mohamed
+  List<Product> searchResults = [];
+  bool isSearching = false;
+  int? selectedCategoryId;
+  bool showCategories = false;
+  final CartService _cartService = CartService();
+  // دي جاية من API بتاعتك
+  List<CategoryApiModel> categoriesApi = [];
+  bool isLoadingCategoriesApi = false;
+
+//################################# 
+//  wafaa
   final TextEditingController _searchController = TextEditingController();
   List<Product> displayedProducts = [];
   List<Product> _allProducts = [];
-int _currentPage = 1;
-int _totalPages = 1;
-bool _isLoadingMore = false;
-bool _hasMore = true;
-  //########################
+  int _currentPage = 1;
+  int _totalPages = 1;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
 
   // Categories variables
   List<Category> _categories = [];
@@ -61,76 +66,80 @@ bool _hasMore = true;
   String? _productsError;
 
   final ApiService _apiService = ApiService();
-final ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
+   //#################################
   @override
   void initState() {
     super.initState();
     _loadCategories();
-    fetchCategoriesApi();
+    fetchCategoriesApi(); //mohamed only
 
     _loadProducts();
     _scrollController.addListener(() {
-    if (_scrollController.position.pixels == 
-        _scrollController.position.maxScrollExtent && 
-        _hasMore && !_isLoadingMore) {
-      _loadProducts(loadMore: true);
-    }
-  });
-  }
-@override
-void dispose() {
-  _scrollController.dispose();
-  super.dispose();
-}
- Future<void> _loadProducts({bool loadMore = false}) async {
-  if (ApiService.token == null) {
-    setState(() {
-      _productsError = 'Please login first';
-      _isLoadingProducts = false;
-    });
-    return;
-  }
-  
-  if (!loadMore) {
-    setState(() {
-      _isLoadingProducts = true;
-      _productsError = null;
-      _currentPage = 1;
-      _allProducts = [];
-    });
-  } else {
-    setState(() {
-      _isLoadingMore = true;
-    });
-  }
-  
-  try {
-    final result = await _apiService.fetchProductsWithPagination(
-      page: _currentPage,
-      perPage: 10,
-    );
-    
-    setState(() {
-      if (loadMore) {
-        _allProducts.addAll(result['products']);
-      } else {
-        _allProducts = result['products'];
+      if (_scrollController.position.pixels ==
+              _scrollController.position.maxScrollExtent &&
+          _hasMore &&
+          !_isLoadingMore) {
+        _loadProducts(loadMore: true);
       }
-      displayedProducts = List.from(_allProducts);
-      _totalPages = result['lastPage'];
-      _hasMore = _currentPage < _totalPages;
-      _currentPage++;
-      _isLoadingProducts = false;
-      _isLoadingMore = false;
-    });
-  } catch (e) {
-    setState(() {
-      _productsError = e.toString();
-      _isLoadingProducts = false;
-      _isLoadingMore = false;
     });
   }
-}
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProducts({bool loadMore = false}) async {
+    if (ApiService.token == null) {
+      setState(() {
+        _productsError = 'Please login first';
+        _isLoadingProducts = false;
+      });
+      return;
+    }
+
+    if (!loadMore) {
+      setState(() {
+        _isLoadingProducts = true;
+        _productsError = null;
+        _currentPage = 1;
+        _allProducts = [];
+      });
+    } else {
+      setState(() {
+        _isLoadingMore = true;
+      });
+    }
+
+    try {
+      final result = await _apiService.fetchProductsWithPagination(
+        page: _currentPage,
+        perPage: 10,
+      );
+
+      setState(() {
+        if (loadMore) {
+          _allProducts.addAll(result['products']);
+        } else {
+          _allProducts = result['products'];
+        }
+        displayedProducts = List.from(_allProducts);
+        _totalPages = result['lastPage'];
+        _hasMore = _currentPage < _totalPages;
+        _currentPage++;
+        _isLoadingProducts = false;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      setState(() {
+        _productsError = e.toString();
+        _isLoadingProducts = false;
+        _isLoadingMore = false;
+      });
+    }
+  }
 
   Future<void> _loadCategories() async {
     // ✅ التأكد من وجود توكن
@@ -173,41 +182,42 @@ void dispose() {
   //     _searchController.dispose();
   //     super.dispose();
   //   }
+//##################################################################
+// mohamed
+  Future<void> _searchProduct(String query) async {
+    final result = await SearchService.searchProducts(
+      query,
+      selectedCategoryId,
+    );
 
- Future<void> _searchProduct(String query) async {
-  final result = await SearchService.searchProducts(
-    query,
-    selectedCategoryId,
-  );
-
-  if (result['success']) {
-    setState(() {
-      searchResults = result['data'];
-      isSearching = query.isNotEmpty || selectedCategoryId != null;
-    });
-  }
-}
-Future<void> fetchCategoriesApi() async {
-  setState(() {
-    isLoadingCategoriesApi = true;
-  });
-
-  try {
-    final result = await CategorySearch.getCategories();
-
-    setState(() {
-      categoriesApi = result;
-    });
-  } catch (e) {
-    print(e);
+    if (result['success']) {
+      setState(() {
+        searchResults = result['data'];
+        isSearching = query.isNotEmpty || selectedCategoryId != null;
+      });
+    }
   }
 
-  setState(() {
-    isLoadingCategoriesApi = false;
-  });
-}
+  Future<void> fetchCategoriesApi() async {
+    setState(() {
+      isLoadingCategoriesApi = true;
+    });
 
+    try {
+      final result = await CategorySearch.getCategories();
 
+      setState(() {
+        categoriesApi = result;
+      });
+    } catch (e) {
+      print(e);
+    }
+
+    setState(() {
+      isLoadingCategoriesApi = false;
+    });
+  }
+//##################################################################################
   //int _selectedIndex = 0;
 
   @override
@@ -228,7 +238,7 @@ Future<void> fetchCategoriesApi() async {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) =>  doctorAccountPage()),
+                MaterialPageRoute(builder: (_) => doctorAccountPage()),//there is change by mohamed 
               );
 
               // افتح صفحة البروفايل
@@ -301,79 +311,80 @@ Future<void> fetchCategoriesApi() async {
           children: [
             _buildSearchBar(),
             const SizedBox(height: 20),
+//####################################################################################
+// mohamed
             Row(
-  children: [
-    GestureDetector(
-      onTap: () {
-        setState(() {
-          showCategories = !showCategories;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade300,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: const [
-            Text("Category"),
-            Icon(Icons.keyboard_arrow_down),
-          ],
-        ),
-      ),
-    ),
-  ],
-),
-if (showCategories) _buildCategoryListApi(),
-            isSearching
-    ? _searchResultsApi()
-    : _buildHomeSections(),
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      showCategories = !showCategories;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: const [
+                        Text("Category"),
+                        Icon(Icons.keyboard_arrow_down),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (showCategories) _buildCategoryListApi(),
+            isSearching ? _searchResultsApi() : _buildHomeSections(),
           ],
         ),
       ),
     );
   }
+
   Widget _searchResultsApi() {
-  if (searchResults.isEmpty) {
-    return const Text("No products found");
+    if (searchResults.isEmpty) {
+      return const Text("No products found");
+    }
+
+    return GridView.builder(
+      itemCount: searchResults.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.60,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemBuilder: (context, index) {
+        final product = searchResults[index];
+
+        return Container(
+          color: Colors.white,
+          child: Column(
+            children: [
+              Image.network(
+                product.images.isNotEmpty ? product.images[0].image : "",
+                height: 120,
+                fit: BoxFit.cover,
+              ),
+              Text(product.name),
+              Text("${product.price} EGP"),
+            ],
+          ),
+        );
+      },
+    );
   }
-
-  return GridView.builder(
-    itemCount: searchResults.length,
-    shrinkWrap: true,
-    physics: const NeverScrollableScrollPhysics(),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 2,
-      childAspectRatio: 0.60,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-    ),
-    itemBuilder: (context, index) {
-      final product = searchResults[index];
-
-      return Container(
-        color: Colors.white,
-        child: Column(
-          children: [
-            Image.network(
-              product.image.isNotEmpty
-                  ? product.image[0].image
-                  : "",
-              height: 120,
-              fit: BoxFit.cover,
-            ),
-            Text(product.name),
-            Text("${product.price} EGP"),
-          ],
-        ),
-      );
-    },
-  );
-}
-
+//######################################################################################
   Widget _buildSearchBar() {
-    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -381,9 +392,9 @@ if (showCategories) _buildCategoryListApi(),
         borderRadius: BorderRadius.circular(10),
       ),
       child: TextField(
-        onChanged: (value) {
-  _searchProduct(value);
-},
+        onChanged: (value) {   //there is change by mohamed
+          _searchProduct(value);
+        },
         controller: _searchController,
         decoration: const InputDecoration(
           border: InputBorder.none,
@@ -392,51 +403,51 @@ if (showCategories) _buildCategoryListApi(),
         ),
       ),
     );
-    
-    
   }
+//############################################################################################
+// mohamed
   Widget _buildCategoryListApi() {
-  if (isLoadingCategoriesApi) {
-    return const Center(child: CircularProgressIndicator());
+    if (isLoadingCategoriesApi) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (categoriesApi.isEmpty) {
+      return const Text("No categories found");
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: categoriesApi.map((cat) {
+          return Row(
+            children: [
+              Checkbox(
+                value: selectedCategoryId == cat.id,
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategoryId = (selectedCategoryId == cat.id)
+                        ? null
+                        : cat.id;
+                    showCategories = false;
+                  });
+
+                  // 🔥 فلترة من API
+                  _searchProduct(_searchController.text);
+                },
+              ),
+              Text(cat.name),
+            ],
+          );
+        }).toList(),
+      ),
+    );
   }
-
-  if (categoriesApi.isEmpty) {
-    return const Text("No categories found");
-  }
-
-  return Container(
-    margin: const EdgeInsets.only(top: 10),
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Column(
-      children: categoriesApi.map((cat) {
-        return Row(
-          children: [
-            Checkbox(
-              value: selectedCategoryId == cat.id,
-              onChanged: (value) {
-                setState(() {
-                  selectedCategoryId =
-                      (selectedCategoryId == cat.id) ? null : cat.id;
-                  showCategories = false;
-                });
-
-                // 🔥 فلترة من API
-                _searchProduct(_searchController.text);
-              },
-            ),
-            Text(cat.name),
-          ],
-        );
-      }).toList(),
-    ),
-  );
-}
-  
-
+//##########################################################################################################
   // ---------------------
   // أقسام الصفحة الرئيسية
   // ---------------------
@@ -475,13 +486,13 @@ if (showCategories) _buildCategoryListApi(),
 
   Widget _categoryItem({required Category category}) {
     return GestureDetector(
-     onTap: () {
-  setState(() {
-    selectedCategoryId = category.id;
-  });
+      onTap: () {   ////there is change by mohamed
+        setState(() {
+          selectedCategoryId = category.id;
+        });
 
-  _searchProduct(_searchController.text);
-},
+        _searchProduct(_searchController.text);
+      },
       child: Column(
         children: [
           Container(
@@ -588,61 +599,76 @@ if (showCategories) _buildCategoryListApi(),
   // Grid Products
   // ---------------------
   Widget _featuredGrid() {
-  if (_isLoadingProducts && _allProducts.isEmpty) {
-    return const Center(child: CircularProgressIndicator());
-  }
-  
-  if (_productsError != null && _allProducts.isEmpty) {
-    return Center(
-      child: Column(
-        children: [
-          Text('Error: $_productsError'),
-          ElevatedButton(
-            onPressed: () => _loadProducts(),
-            child: const Text('Retry'),
+    if (_isLoadingProducts && _allProducts.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_productsError != null && _allProducts.isEmpty) {
+      return Center(
+        child: Column(
+          children: [
+            Text('Error: $_productsError'),
+             SizedBox(height: 10,),
+            ElevatedButton(
+               style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.blueAccent,
+              ),
+              onPressed: () => _loadProducts(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_allProducts.isEmpty) {
+      return const Center(child: Text('No products found.'));
+    }
+
+    return Column(
+      children: [
+        GridView.builder(
+          controller: _scrollController,
+          itemCount: displayedProducts.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.60,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
-        ],
-      ),
+          itemBuilder: (context, index) {
+            return _productCard(displayedProducts[index]);
+          },
+        ),
+        if (_isLoadingMore)
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: CircularProgressIndicator(),
+          ),
+      ],
     );
   }
-  
-  if (_allProducts.isEmpty) {
-    return const Center(child: Text('No products found.'));
-  }
 
-  return Column(
-    children: [
-      GridView.builder(
-        controller: _scrollController,
-        itemCount: displayedProducts.length,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.60,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemBuilder: (context, index) {
-          return _productCard(displayedProducts[index]);
-        },
-      ),
-      if (_isLoadingMore)
-        const Padding(
-          padding: EdgeInsets.all(16.0),
-          child: CircularProgressIndicator(),
-        ),
-    ],
-  );
-}
   // ---------------------
   // PRODUCT CARD
   // ---------------------
   Widget _productCard(Product p) {
-    bool isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
+final wishlistProvider = Provider.of<WishlistProvider>(
+      context,
+      listen: true,
+    );
+final isInWishlist = wishlistProvider.isInWishlist(p.id);
+   // final isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
     bool isInequipmentList = equipmentListGlobal.any(
       (i) => i["name"] == p.name,
     );
+      String supplierName = '';
+    if (p.supplierData != null && p.supplierData!['company_name'] != null) {
+      supplierName = p.supplierData!['company_name'];
+    }
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -658,7 +684,8 @@ if (showCategories) _buildCategoryListApi(),
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProductDetailsPage(product: p , productId: p.id,),
+                      builder: (_) =>
+                          ProductDetailsPage(productId: p.id,product: p),
                     ),
                   );
                 },
@@ -706,9 +733,16 @@ if (showCategories) _buildCategoryListApi(),
                   ),
                 ),
               ),
-
-              
-
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 4,
+                ),
+                child: Text(
+                  supplierName,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8.0,
@@ -765,26 +799,16 @@ if (showCategories) _buildCategoryListApi(),
             child: Row(
               children: [
                 // ❤️ Wishlist
-                GestureDetector(
+                  GestureDetector(
                   onTap: () {
-                    setState(() {
-                      if (isInWishlist) {
-                        wishListGlobal.removeWhere((i) => i["name"] == p.name);
-                      } else {
-                        wishListGlobal.add({
-                          "name": p.name,
-                          "price": p.price,
-                          "image": p.imagePath,
-                        });
-                      }
-                    });
+                    wishlistProvider.toggleWishlist(p.id);
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          isInWishlist
-                              ? "${p.name} removed from wishlist"
-                              : "${p.name} added to wishlist",
+                          wishlistProvider.isInWishlist(p.id)
+                              ? "${p.name} added to wishlist"
+                              : "${p.name} removed from wishlist",
                         ),
                       ),
                     );
@@ -795,7 +819,6 @@ if (showCategories) _buildCategoryListApi(),
                     size: 26,
                   ),
                 ),
-
                 const SizedBox(width: 8),
 
                 // 📋 Equipment List
@@ -829,7 +852,7 @@ if (showCategories) _buildCategoryListApi(),
                     );
                   },
                   child: Icon(
-                    Icons.notifications, // أو playlist_add
+                    Icons.bookmark_border, // أو playlist_add
                     color: isInequipmentList ? Colors.blue : Colors.black,
                     size: 26,
                   ),
@@ -900,42 +923,46 @@ if (showCategories) _buildCategoryListApi(),
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
-              padding:  EdgeInsets.symmetric(vertical: 14 ),
+              padding: EdgeInsets.symmetric(vertical: 14),
             ),
-           onPressed: () async {
-  final result = await _cartService.addToCart(
-    productId: p.id,
-    quantity: 1,
-    type: "sale",
-  );
+            onPressed: () async {  //there is change by mohamed
+              final result = await _cartService.addToCart(
+                productId: p.id,
+                quantity: 1,
+                type: "sale",
+              );
 
-  if (result['success'] != false) {
-    // ✅ ضيفه local برضو لو عايز
-    cartItemsGlobal.add(
-      CartItem(
-        daily_rent: 0,
-        name: p.name,
-        image: p.imagePath,
-        quantity: 1,
-        price: p.price,
-        type: 'sale',
-        dateRange: '',
-        id: p.id,
-      ),
-    );
+              if (result['success'] != false) {
+                // ✅ ضيفه local برضو لو عايز
+                cartItemsGlobal.add(
+                  CartItem(
+                    daily_rent: 0,
+                    name: p.name,
+                    image: p.imagePath,
+                    quantity: 1,
+                    price: p.price,
+                    type: 'sale',
+                    dateRange: '',
+                    id: p.id,
+                  ),
+                );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("${p.name} added to cart ✅")),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result['message'] ?? "Error")),
-    );
-  }
-},
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("${p.name} added to cart ✅")),
+                );
+              } else { //there is change by mohamed
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['message'] ?? "Error")),
+                );
+              }
+            },
             child: const Text(
               "Add To Cart",
-              style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold , fontSize: 12),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
             ),
           ),
         ),
@@ -968,14 +995,21 @@ if (showCategories) _buildCategoryListApi(),
                   SnackBar(content: Text("${p.name} added to cart (Rent)")),
                 );
               },
-              child: const Text("Rent", style: TextStyle(color: Colors.white , fontWeight: FontWeight.bold , fontSize: 12)),
+              child: const Text(
+                "Rent",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
             ),
           ),
         ],
       ],
     );
   }
-
+//#########################   comment by mohamed
   // ---------------------
   // Search Results
   // ---------------------

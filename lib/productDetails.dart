@@ -15,14 +15,14 @@ class Review {
   final String comment;
   final int rating;
   final DateTime date;
-  final int id;
+  final int id;   //add by mohamed
 
   Review({
     required this.name,
     required this.comment,
     required this.rating,
     required this.date,
-    required this.id,
+    required this.id, //add by mohamed
   });
 }
 
@@ -429,7 +429,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       itemCount: _product!.images.length,
       onPageChanged: (i) => setState(() => currentImage = i),
       itemBuilder: (_, i) => Image.network(
-        _product!.images[i].image,
+        _product!.images[i].image, //there is change by mohamed
         fit: BoxFit.contain,
         errorBuilder: (context, error, StackTrace) {
           return const Icon(Icons.broken_image, size: 50);
@@ -1152,7 +1152,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 }
 
 // ---------------- SPEC ROW ----------------
-// class _SpecRow extends StatelessWidget {
+// class _SpecRow extends StatelessWidget {    //////comment by mohamed
 //   final String title;
 //   final String value;
 

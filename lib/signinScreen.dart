@@ -316,7 +316,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
+                        onPressed: () {    // change by mohamed
                           Navigator.push(
                             context,
                             MaterialPageRoute(
