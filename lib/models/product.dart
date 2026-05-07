@@ -1,4 +1,5 @@
-import 'package:medconnect_app/models/product_image.dart'; // change by mohamed
+import 'package:medconnect_app/models/product_image.dart';
+import 'package:medconnect_app/models/review.dart'; // change by mohamed
 class Product {
   final int id;
   final int supplierId;              // ✅ جديد (مهم للمورد)
@@ -20,7 +21,8 @@ class Product {
   final String? configuration;
   final int setupDuration;
   
-
+ final List<Review> reviews;
+ 
   Product({
     required this.id,
     required this.supplierId,
@@ -41,6 +43,8 @@ class Product {
     required this.specification,
     required this.warranty,
     required this.setupDuration,
+
+    required this.reviews,
   
   });
   
@@ -74,6 +78,12 @@ class Product {
           .toList();
       firstImage = imagesList.isNotEmpty ? imagesList.first.image : '';
     }
+      List<Review> reviewsList = [];
+    if (json['reviews'] != null && json['reviews'] is List) {
+      reviewsList = (json['reviews'] as List)
+          .map((r) => Review.fromJson(r))
+          .toList();
+    }
 
     return Product(
       id: json['id'],
@@ -94,7 +104,10 @@ class Product {
       warranty: json['warranty'] ?? '0',
       setupDuration: json['setup_duration'] ?? 0,
        supplierData: json['supplier'], 
-       configuration: configurationValue
+       configuration: configurationValue,
+
+
+       reviews: reviewsList,
     );
   }
 }

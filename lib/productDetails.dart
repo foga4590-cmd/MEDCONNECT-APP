@@ -2,29 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/models/review.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/supplierProfile.dart';
 import 'package:provider/provider.dart';
 import '../providers/wishlist_provider.dart';
 
-// Global cart items list
-
-// ---------------- MODELS ----------------
-class Review {
-  final String name;
-  final String comment;
-  final int rating;
-  final DateTime date;
-  final int id;   //add by mohamed
-
-  Review({
-    required this.name,
-    required this.comment,
-    required this.rating,
-    required this.date,
-    required this.id, //add by mohamed
-  });
-}
 
 // ---------------- PAGE ----------------
 class ProductDetailsPage extends StatefulWidget {
@@ -44,6 +27,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   bool isLoading = true;
   String? _error;
 
+List<Review> get reviews => _product?.reviews ?? [];
   final ApiService _apiService = ApiService();
 
   @override
@@ -66,7 +50,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     //   _isLoading = true;
     //   _error = null;
     // });
-    print(" product config : ${_product!.configuration}");
+    //print(" product config : ${_product!.configuration}");
     try {
       final freshproduct = await _apiService.fetchProductById(widget.productId);
       setState(() {
@@ -93,26 +77,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         : _product!.price; // Example price difference
   }
 
-  String selectedWarranty = "1-Year Standard Warranty";
+  String selectedWarranty = "";
 
   // -------- Reviews --------
-  double get averageRating {
-    if (reviews.isEmpty) return 0;
-    return reviews.fold<int>(0, (s, r) => s + r.rating) / reviews.length;
-  }
+double get averageRating {
+  if (reviews.isEmpty) return 0;
+  return reviews.fold<int>(0, (sum, r) => sum + r.rating) / reviews.length;
+}
 
   int userRating = 0;
   final TextEditingController reviewController = TextEditingController();
-
-  List<Review> reviews = [
-    Review(
-      name: "Dr. Ahmed",
-      comment: "High quality and very reliable.",
-      rating: 5,
-      date: DateTime.now(),
-      id: 1,
-    ),
-  ];
 
   int get rentDays {
     if (rentStartDate == null || rentEndDate == null) return 0;
@@ -457,7 +431,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   // ---------------- SUPPLIER ----------------
   Widget _supplierCard(BuildContext context) {
     // ✅ جلب اسم المورد من supplierData
-    String supplierName = 'xxxxxx'; // اسم افتراضي
+    String supplierName = ' '; // اسم افتراضي
 
     if (_product!.supplierData != null) {
       supplierName = _product!.supplierData!['company_name'] ?? 'xxxxxx';
@@ -881,175 +855,379 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     ),
   );
   // ---------------- REVIEWS ----------------
-  Widget _reviewsSection() => _card(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ---------- Average Rating ----------
-        Center(
-          child: Column(
-            children: [
-              const Text(
-                "Average Rating",
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                averageRating.toStringAsFixed(1),
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+   Widget _reviewsSection() => _card(
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Average Rating
+      Center(
+        child: Column(
+          children: [
+            const Text("Average Rating", style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 6),
+            Text(
+              averageRating.toStringAsFixed(1),
+              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                5,
+                (i) => Icon(
+                  i < averageRating.round() ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 22,
                 ),
               ),
-              const SizedBox(height: 4),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "based on ${reviews.length} reviews",
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 24),
+
+      // Reviews List (من API)
+      if (reviews.isNotEmpty)
+        ...reviews.map((r) => Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 6),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircleAvatar(
+                    radius: 16,
+                    child: Icon(Icons.person, size: 16),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      r.doctorName ?? "Doctor",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Text(
+                    "${r.createdAt.day}/${r.createdAt.month}/${r.createdAt.year}",
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
                 children: List.generate(
                   5,
                   (i) => Icon(
-                    i < averageRating.round() ? Icons.star : Icons.star_border,
+                    i < r.rating ? Icons.star : Icons.star_border,
                     color: Colors.amber,
-                    size: 22,
+                    size: 16,
                   ),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                "based on ${reviews.length} reviews",
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
+              const SizedBox(height: 8),
+              Text(r.comment),
             ],
           ),
+        ))
+      else
+        const Padding(
+          padding: EdgeInsets.all(16),
+          child: Text("No reviews yet", style: TextStyle(color: Colors.grey)),
         ),
 
-        const SizedBox(height: 24),
+      const SizedBox(height: 20),
 
-        // ---------- Reviews List ----------
-        ...reviews.map(
-          (r) => Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 6),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Image.asset(
-                      "assets/images/doctorProfile.png",
-                      height: 30,
-                      width: 30,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        r.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Text(
-                      "${r.date.day}/${r.date.month}/${r.date.year}",
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: List.generate(
-                    5,
-                    (i) => Icon(
-                      i < r.rating ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
-                      size: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(r.comment),
-              ],
+      // Leave Review
+      const Text("Leave A Review", style: TextStyle(fontWeight: FontWeight.bold)),
+      const SizedBox(height: 10),
+      Row(
+        children: List.generate(
+          5,
+          (i) => GestureDetector(
+            onTap: () => setState(() => userRating = i + 1),
+            child: Icon(
+              i < userRating ? Icons.star : Icons.star_border,
+              color: Colors.amber,
+              size: 28,
             ),
           ),
         ),
-
-        const SizedBox(height: 20),
-
-        // ---------- Leave Review ----------
-        const Text(
-          "Leave A Review",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-
-        Row(
-          children: List.generate(
-            5,
-            (i) => GestureDetector(
-              onTap: () => setState(() => userRating = i + 1),
-              child: Icon(
-                i < userRating ? Icons.star : Icons.star_border,
-                color: Colors.amber,
-                size: 28,
-              ),
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: reviewController,
+        maxLines: 3,
+        decoration: InputDecoration(
+          hintText: "Share Your Experience With This Product...",
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+      ),
+      const SizedBox(height: 16),
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF005EA6),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
           ),
+          onPressed: _submitReview,
+          child: const Text("Submit Review", style: TextStyle(color: Colors.white)),
         ),
+      ),
+    ],
+  ),
+);
+Future<void> _submitReview() async {
+  if (reviewController.text.isEmpty || userRating == 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please add a rating and comment')),
+    );
+    return;
+  }
 
-        const SizedBox(height: 12),
+  setState(() => isLoading = true);
 
-        TextField(
-          controller: reviewController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: "Share Your Experience With This Product...",
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        ),
+  try {
+    final result = await _apiService.addReview(
+      productId: _product!.id,
+      rating: userRating,
+      comment: reviewController.text,
+    );
 
-        const SizedBox(height: 16),
+    if (result['success'] == true) {
+      // ✅ إضافة التقييم محلياً (أو إعادة تحميل المنتج)
+      final newReview = Review(
+        id: DateTime.now().millisecondsSinceEpoch,
+        doctorId: 0,
+        rating: userRating,
+        comment: reviewController.text,
+        createdAt: DateTime.now(),
+        doctorName: "You",
+      );
+      
+      setState(() {
+        _product = Product(
+          // نسخ كل البيانات مع إضافة التقييم الجديد
+          id: _product!.id,
+          supplierId: _product!.supplierId,
+          name: _product!.name,
+          brand: _product!.brand,
+          price: _product!.price,
+          imagePath: _product!.imagePath,
+          stock: _product!.stock,
+          isRentable: _product!.isRentable,
+          restockDate: _product!.restockDate,
+          status: _product!.status,
+          images: _product!.images,
+          description: _product!.description,
+          specification: _product!.specification,
+          warranty: _product!.warranty,
+          setupDuration: _product!.setupDuration,
+          supplierData: _product!.supplierData,
+          reviews: [..._product!.reviews, newReview],
+        );
+        userRating = 0;
+        reviewController.clear();
+        isLoading = false;
+      });
 
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF005EA6),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {
-              if (reviewController.text.isEmpty || userRating == 0) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Review submitted successfully!')),
+      );
+    } else {
+      throw result['error'] ?? 'Failed to submit review';
+    }
+  } catch (e) {
+    setState(() => isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+    );
+  }
+}
+  // Widget _reviewsSection() => _card(
+  //   child: Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       // ---------- Average Rating ----------
+  //       Center(
+  //         child: Column(
+  //           children: [
+  //             const Text(
+  //               "Average Rating",
+  //               style: TextStyle(color: Colors.grey),
+  //             ),
+  //             const SizedBox(height: 6),
+  //             Text(
+  //               averageRating.toStringAsFixed(1),
+  //               style: const TextStyle(
+  //                 fontSize: 32,
+  //                 fontWeight: FontWeight.bold,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 4),
+  //             Row(
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               children: List.generate(
+  //                 5,
+  //                 (i) => Icon(
+  //                   i < averageRating.round() ? Icons.star : Icons.star_border,
+  //                   color: Colors.amber,
+  //                   size: 22,
+  //                 ),
+  //               ),
+  //             ),
+  //             const SizedBox(height: 4),
+  //             Text(
+  //               "based on ${reviews.length} reviews",
+  //               style: const TextStyle(color: Colors.grey, fontSize: 12),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
 
-              setState(() {
-                reviews.insert(
-                  0,
-                  Review(
-                    name: "You",
-                    comment: reviewController.text,
-                    rating: userRating,
-                    date: DateTime.now(),
-                    id: reviews.length + 1,
-                  ),
-                );
-                reviewController.clear();
-                userRating = 0;
-              });
-            },
-            child: const Text(
-              "Submit Review",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
+  //       const SizedBox(height: 24),
+
+  //       // ---------- Reviews List ----------
+  //       ...reviews.map(
+  //         (r) => Container(
+  //           margin: const EdgeInsets.only(bottom: 12),
+  //           padding: const EdgeInsets.all(14),
+  //           decoration: BoxDecoration(
+  //             color: Colors.white,
+  //             borderRadius: BorderRadius.circular(14),
+  //             boxShadow: [
+  //               BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 6),
+  //             ],
+  //           ),
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Row(
+  //                 children: [
+  //                   Image.asset(
+  //                     "assets/images/doctorProfile.png",
+  //                     height: 30,
+  //                     width: 30,
+  //                   ),
+  //                   const SizedBox(width: 10),
+  //                   Expanded(
+  //                     child: Text(
+  //                       r.name,
+  //                       style: const TextStyle(fontWeight: FontWeight.bold),
+  //                     ),
+  //                   ),
+  //                   Text(
+  //                     "${r.date.day}/${r.date.month}/${r.date.year}",
+  //                     style: const TextStyle(fontSize: 11, color: Colors.grey),
+  //                   ),
+  //                 ],
+  //               ),
+  //               const SizedBox(height: 6),
+  //               Row(
+  //                 children: List.generate(
+  //                   5,
+  //                   (i) => Icon(
+  //                     i < r.rating ? Icons.star : Icons.star_border,
+  //                     color: Colors.amber,
+  //                     size: 16,
+  //                   ),
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 8),
+  //               Text(r.comment),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+
+  //       const SizedBox(height: 20),
+
+  //       // ---------- Leave Review ----------
+  //       const Text(
+  //         "Leave A Review",
+  //         style: TextStyle(fontWeight: FontWeight.bold),
+  //       ),
+  //       const SizedBox(height: 10),
+
+  //       Row(
+  //         children: List.generate(
+  //           5,
+  //           (i) => GestureDetector(
+  //             onTap: () => setState(() => userRating = i + 1),
+  //             child: Icon(
+  //               i < userRating ? Icons.star : Icons.star_border,
+  //               color: Colors.amber,
+  //               size: 28,
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+
+  //       const SizedBox(height: 12),
+
+  //       TextField(
+  //         controller: reviewController,
+  //         maxLines: 3,
+  //         decoration: InputDecoration(
+  //           hintText: "Share Your Experience With This Product...",
+  //           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+  //         ),
+  //       ),
+
+  //       const SizedBox(height: 16),
+
+  //       SizedBox(
+  //         width: double.infinity,
+  //         child: ElevatedButton(
+  //           style: ElevatedButton.styleFrom(
+  //             backgroundColor: const Color(0xFF005EA6),
+  //             padding: const EdgeInsets.symmetric(vertical: 14),
+  //             shape: RoundedRectangleBorder(
+  //               borderRadius: BorderRadius.circular(10),
+  //             ),
+  //           ),
+  //           onPressed: () {
+  //             if (reviewController.text.isEmpty || userRating == 0) return;
+
+  //             setState(() {
+  //               reviews.insert(
+  //                 0,
+  //                 Review(
+  //                   name: "You",
+  //                   comment: reviewController.text,
+  //                   rating: userRating,
+  //                   date: DateTime.now(),
+  //                   id: reviews.length + 1,
+  //                 ),
+  //               );
+  //               reviewController.clear();
+  //               userRating = 0;
+  //             });
+  //           },
+  //           child: const Text(
+  //             "Submit Review",
+  //             style: TextStyle(color: Colors.white),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   ),
+  // );
 
   // ---------------- ACTION BUTTON ----------------
   Widget _actionButton() => Padding(

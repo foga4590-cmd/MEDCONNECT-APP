@@ -133,7 +133,7 @@ Widget datePickerField({
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>  DoctorProfilePage(),
+                builder: (_) =>  doctorAccountPage(),
               ),
             ),
         ),

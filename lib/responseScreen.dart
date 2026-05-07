@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/core/app_colorResponse.dart';
+import 'package:medconnect_app/models/custom_request_model.dart';
 import 'package:medconnect_app/models/offer_request.dart';
+import 'package:medconnect_app/models/supplierBid.dart';
 import 'package:medconnect_app/myCustomRequests.dart';
+import 'package:medconnect_app/acceptedSupplier.dart';
 import 'package:medconnect_app/services/api_service.dart';
 
 class SupplierBidsPage extends StatefulWidget {
   final int customRequestId;
-  const SupplierBidsPage({super.key, required this.customRequestId});
+  final String customRequestBudget;
+  const SupplierBidsPage({super.key, required this.customRequestId , required this.customRequestBudget});
 
   @override
   State<SupplierBidsPage> createState() => _SupplierBidsPageState();
@@ -90,6 +94,7 @@ class _SupplierBidsPageState extends State<SupplierBidsPage> {
                 return SupplierBidCard(
                   offer: _offers[index],
                   initiallyExpanded: index == 0,
+                  customRequestBudget : widget.customRequestBudget
                 );
               },
             ),
@@ -100,11 +105,14 @@ class _SupplierBidsPageState extends State<SupplierBidsPage> {
 class SupplierBidCard extends StatelessWidget {
   final OfferRequest offer;
   final bool initiallyExpanded;
+  final String customRequestBudget;
 
   const SupplierBidCard({
     super.key,
     required this.offer,
     this.initiallyExpanded = false,
+    required this.customRequestBudget,
+    
   });
 
   @override
@@ -164,6 +172,9 @@ class SupplierBidCard extends StatelessWidget {
           const SizedBox(height: 12),
           _budgetRow("Delivery Days:", "${offer.deliveryDays} days"),
           const SizedBox(height: 6),
+
+          _budgetRow("Your Budget :",_formatBudget(customRequestBudget)),
+          
           _budgetRow(
             "Supplier's Bid :",
             "\$${offer.price}",
@@ -176,6 +187,11 @@ class SupplierBidCard extends StatelessWidget {
         ],
       ),
     );
+  }
+  String _formatBudget(String budget) {
+  if (budget == "No Budget") return budget;
+  if (budget.startsWith('\$')) return budget;
+  return "\$$budget";
   }
 
   // Widget _budgetRow(
@@ -222,6 +238,7 @@ Widget _pendingButtons(BuildContext context) {
         Expanded(
           child: OutlinedButton(
             onPressed: () {
+              _rejectOffer(context);
               // TODO: رفض العرض
             },
             child: const Text("Decline"),
@@ -239,8 +256,9 @@ Widget _pendingButtons(BuildContext context) {
         const SizedBox(width: 8),
         Expanded(
           child: ElevatedButton(onPressed: () {
+              _acceptOffer(context);
               // TODO: قبول العرض
-              _showAcceptDialog(context);
+          //    _showAcceptDialog(context);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -254,6 +272,122 @@ Widget _pendingButtons(BuildContext context) {
       ],
     );
   }
+  void _acceptOffer(BuildContext context) async {
+  final shouldAccept = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Accept Offer'),
+      content: const Text('Are you sure you want to accept this offer?\n\nOther offers will be automatically rejected.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Accept', style: TextStyle(color: Colors.green)),
+        ),
+      ],
+    ),
+  );
+
+  if (shouldAccept != true) return;
+
+  // إظهار مؤشر تحميل
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    final apiService = ApiService();
+    final result = await apiService.respondToOffer(
+      offerId: offer.id,
+      response: 'accepted',
+    );
+
+    // إغلاق مؤشر التحميل
+    Navigator.pop(context);
+
+    if (result['success'] == true) {
+      // ✅ تحديث واجهة العرض (إخفاء الأزرار)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Offer accepted successfully!')),
+      );
+      
+      // ✅ الذهاب لصفحة AcceptedSupplierDetails مع بيانات المورد
+      // Navigator.pushReplacement(
+      //   context,
+      //   MaterialPageRoute(
+      //     builder: (_) => AcceptedSupplierDetailsPage(
+      //       offer: offer,
+      //     ),
+      //   ),
+      // );
+    } else {
+      throw Exception(result['error'] ?? 'Failed to accept offer');
+    }
+  } catch (e) {
+    Navigator.pop(context); // إغلاق مؤشر التحميل لو كان مفتوح
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+    );
+  }
+}
+
+void _rejectOffer(BuildContext context) async {
+  final shouldReject = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Reject Offer'),
+      content: const Text('Are you sure you want to reject this offer?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Reject', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+
+  if (shouldReject != true) return;
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    final apiService = ApiService();
+    final result = await apiService.respondToOffer(
+      offerId: offer.id,
+      response: 'rejected',
+    );
+
+    Navigator.pop(context);
+
+    if (result['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Offer rejected')),
+    );
+      // تحديث الحالة محلياً
+      // (يمكن إعادة تحميل الصفحة)
+    } else {
+      throw Exception(result['error'] ?? 'Failed to reject offer');
+    }
+  } catch (e) {
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+    );
+  }
+}
 
   void _showAcceptDialog(BuildContext context) {
     showDialog(

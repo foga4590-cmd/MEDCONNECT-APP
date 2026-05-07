@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:medconnect_app/core/app_colorMycustom.dart';
+import 'package:medconnect_app/doctorAccount.dart';
 //import 'package:medconnect_app/customRequest.dart';
 import 'package:medconnect_app/doctorProfile.dart';
 import 'package:medconnect_app/models/custom_request_model.dart';
@@ -93,7 +95,7 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const DoctorProfilePage(
+                builder: (context) => doctorAccountPage(
                   //  requestType: "Tools",
                 ),
               ),
@@ -227,14 +229,22 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
 
     return GestureDetector(
       onTap: isCardClickable
-          ? () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AcceptedSupplierDetailsPage(),
-                ),
-              );
-            }
+          ? (){
+
+         // if (isInNegotiation) {
+          // ✅ لو في مفاوضات، نروح لصفحة AcceptedSupplierDetails
+          // ملاحظة: لازم نعرف الـ offerId
+          // حالياً هنحتاج نجيب الـ offer الأول
+          _navigateToAcceptedSupplier(request);
+        // } else {
+        //       Navigator.push(
+        //         context,
+        //         MaterialPageRoute(
+        //           builder: (_) => const AcceptedSupplierDetailsPage(),
+        //         ),
+        //       );
+        //     }
+          }
           : null,
 
       child: Opacity(
@@ -265,11 +275,15 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
                     if (showNotification)
                       InkWell(
                         onTap: () {
+                          final budget = request.budget!= null && request.budget!.isNotEmpty
+                          ?request.budget!
+                          :"No Budget";
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => SupplierBidsPage(
-                                customRequestId: request.id
+                                customRequestId: request.id,
+                                customRequestBudget: budget,
                               ),
                             ),
                           );
@@ -458,7 +472,31 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
       ),
     );
   }
-
+Future<void> _navigateToAcceptedSupplier(CustomRequest request) async {
+  try {
+    final offers = await _apiService.getOfferRequests(request.id);
+    final acceptedOffer = offers.firstWhere(
+      (o) => o.status.toLowerCase() == 'accepted',
+      orElse: () => offers.first,
+    );
+    final originalBudget = request.budget !=null && request.budget!.isNotEmpty
+    ?request.budget!
+    :"No Budget";
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AcceptedSupplierDetailsPage(
+          offer: acceptedOffer,
+          requestBudget: originalBudget,
+        ),
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e')),
+    );
+  }
+}
 
   Widget _buildStatusChip(String status) {
     Color bgColor;
@@ -611,6 +649,35 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
     );
   }
 }
+
+  // void _deleteRequest(CustomRequest request) {
+  //   showDialog(
+  //     context: context,
+  //     builder: (ctx) => AlertDialog(
+  //       title: const Text('Delete Request'),
+  //       content: const Text('Are you sure you want to delete this request?'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(ctx),
+  //           child: const Text('Cancel'),
+  //         ),
+  //         TextButton(
+  //           onPressed: () {
+  //             Navigator.pop(ctx);
+  //             // TODO: استدعاء API الحذف
+  //             setState(() {
+  //               _requests.remove(request);
+  //             });
+  //             ScaffoldMessenger.of(
+  //               context,
+  //             ).showSnackBar(const SnackBar(content: Text('Request deleted')));
+  //           },
+  //           child: const Text('Delete', style: TextStyle(color: Colors.red)),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
   Future<void> _deleteRequest(CustomRequest request) async {
   final shouldDelete = await showDialog<bool>(
     context: context,
@@ -657,34 +724,6 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
     );
   }
 }
-  // void _deleteRequest(CustomRequest request) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (ctx) => AlertDialog(
-  //       title: const Text('Delete Request'),
-  //       content: const Text('Are you sure you want to delete this request?'),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(ctx),
-  //           child: const Text('Cancel'),
-  //         ),
-  //         TextButton(
-  //           onPressed: () {
-  //             Navigator.pop(ctx);
-  //             // TODO: استدعاء API الحذف
-  //             setState(() {
-  //               _requests.remove(request);
-  //             });
-  //             ScaffoldMessenger.of(
-  //               context,
-  //             ).showSnackBar(const SnackBar(content: Text('Request deleted')));
-  //           },
-  //           child: const Text('Delete', style: TextStyle(color: Colors.red)),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   // void _reRequest(CustomRequest request) {
   //   // TODO: فتح شاشة CustomRequestScreen مع بيانات الطلب القديم
