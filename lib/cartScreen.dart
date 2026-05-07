@@ -11,6 +11,7 @@ class CartItem {
   int quantity;
   final double price;
   final String type;
+  final int productId; 
 
   final double daily_rent;
   String? dateRange;
@@ -26,6 +27,8 @@ class CartItem {
     required this.type,
     required this.daily_rent,
     this.dateRange,
+    required this.productId,
+     this.rStartDate,
   });
 }
 
@@ -64,7 +67,7 @@ class _CartPageState extends State<CartPage> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Failed to load cart")));
+      ).showSnackBar(SnackBar(content: Text("Cart returned successfully")));
     }
   }
 
@@ -93,7 +96,8 @@ class _CartPageState extends State<CartPage> {
         quantity: item['quantity'],
         price: double.parse(product['price'].toString()),
         type: item['type'],
-        daily_rent: 0, // مش موجود في API حالياً
+        daily_rent: 0,
+        productId: product['id'], // مش موجود في API حالياً
       );
     }).toList();
   }
@@ -253,11 +257,23 @@ class _CartPageState extends State<CartPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _qtyButton(Icons.add, () async {
-                        await cartService.updateCart(
-                          cartId: item.id,
-                          quantity: item.quantity + 1,
-                        );
-                        await loadCart();
+                        setState(() {
+                          item.quantity += 1;
+                        });
+                        try {
+                          await cartService.updateCart(
+                            cartId: item.id,
+                            quantity: item.quantity,
+                          );
+                        } catch (e) {
+                          setState(() {
+                            item.quantity -= 1;
+                          });
+                          print("Error updating quantity: $e");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Failed to update quantity")),
+                          );
+                        }
                       }),
 
                       Padding(
@@ -267,29 +283,28 @@ class _CartPageState extends State<CartPage> {
 
                       _qtyButton(Icons.remove, () async {
                         if (item.quantity > 1) {
-                          await cartService.updateCart(
-                            cartId: item.id,
-                            quantity: item.quantity - 1,
-                          );
-                          await loadCart();
+                          setState(() {
+                            item.quantity -= 1;
+                          });
+                          try {
+                            await cartService.updateCart(
+                              cartId: item.id,
+                              quantity: item.quantity,
+                            );
+                          } catch (e) {
+                            setState(() {
+                              item.quantity += 1;
+                            });
+                            print("Error updating quantity: $e");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Failed to update quantity")),
+                            );
+                          }
                         }
                       }),
                     ],
                   ),
                 ],
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                     
-
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('${item.quantity}'),
-                      ),
-
-                     
-                    ],
-                  ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () async {

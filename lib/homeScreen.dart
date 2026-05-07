@@ -37,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   //#############################
   // mohamed
-  List<Product> searchResults = [];
+  List<ProductModel> searchResults = [];
   bool isSearching = false;
   int? selectedCategoryId;
   bool showCategories = false;
@@ -371,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               Image.network(
-                product.images.isNotEmpty ? product.images[0].image : "",
+                product.image.isNotEmpty ? product.image[0].image : "",
                 height: 120,
                 fit: BoxFit.cover,
               ),
@@ -944,6 +944,7 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
                     type: 'sale',
                     dateRange: '',
                     id: p.id,
+                    productId: p.id,
                   ),
                 );
 
@@ -988,6 +989,7 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
                     dateRange: '',
                     daily_rent: 50,
                     id: p.id,
+                    productId: p.id,
                   ),
                 );
 

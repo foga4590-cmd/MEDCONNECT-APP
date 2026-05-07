@@ -1074,7 +1074,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   type: selectedPurchase == 0 ? "rent" : "buy",
                   dateRange: selectedPurchase == 0 ? "3 Days" : "",
                   daily_rent: 50,
-                  id: _product!.id,),
+                  id: _product!.id,
+                  
+                  productId: _product!.id,),
               );
 
               // SnackBar
