@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/core/app_colorAccepted.dart';
+//import 'package:medconnect_app/models/custom_request_model.dart';
+import 'package:medconnect_app/models/offer_request.dart';
+import 'package:medconnect_app/myCustomRequests.dart';
+//import 'package:medconnect_app/responseScreen.dart';
 
 class AcceptedSupplierDetailsPage extends StatelessWidget {
-  const AcceptedSupplierDetailsPage({super.key});
+  final OfferRequest offer;
+  final String requestBudget;
+  const AcceptedSupplierDetailsPage({super.key,required this.offer,required this.requestBudget});
 
   @override
   Widget build(BuildContext context) {
@@ -16,12 +22,12 @@ class AcceptedSupplierDetailsPage extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new),
           onPressed: () {
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (context) => const SupplierBidsPage(),
-            //   ),
-            // );
+             Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MyCustomRequestsPage(),
+              ),
+            );
           },
         ),
         title: const Text(
@@ -36,13 +42,13 @@ class AcceptedSupplierDetailsPage extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _supplierHeader(isDark),
+                _supplierHeader(isDark,offer),
                 const SizedBox(height: 20),
-                _supplierNote(isDark),
+                _supplierNote(isDark,offer),
                 const SizedBox(height: 20),
-                _budgetSection(isDark),
+                _budgetSection(isDark,offer,requestBudget),
                 const SizedBox(height: 20),
-                _statusCard(isDark),
+                _statusCard(isDark,offer),
               ],
             ),
           ),
@@ -52,7 +58,7 @@ class AcceptedSupplierDetailsPage extends StatelessWidget {
     );
   }
 }
-Widget _supplierHeader(bool isDark) {
+Widget _supplierHeader(bool isDark,OfferRequest offer) {
   return Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
@@ -75,30 +81,38 @@ Widget _supplierHeader(bool isDark) {
               BoxShadow(color: Colors.black26, blurRadius: 6),
             ],
           ),
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage(
-              "https://lh3.googleusercontent.com/aida-public/AB6AXuDUC5uQ05csGzmasPLnzACIoEz6d20W7Eev_DYPRJBd1ntOlGSKhNmhXnwvHrwc7VVWd1zblzvMHG4HvvUaS5PhU6DsJsKkOJ8XUjsHJJVlJGAnhHBGB6VbdPtI0Q78b1nAZF1TDQiSeSatyj6yZ-CT50DVAjprGl0tu9VzvmzV0jxtfYOI7pxO6YdqWGIRzubqjzCDxeFTpAfyAUFu1-0PPMbsNN_k0bKkCMXGga3s81c6B_JPzXAS1QtRfBzS19jcINXuaqhgCq8",
+            backgroundImage: 
+              offer.supplier.companyImageUrl != null 
+              ? NetworkImage(offer.supplier.companyImageUrl!)
+              : null,
+                child: offer.supplier.companyImageUrl == null
+              ? const Icon(Icons.business, size: 40)
+              : null,
             ),
-          ),
+          
         ),
         const SizedBox(height: 12),
-        const Text(
-          "Global Med-Equip Inc.",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
         Text(
-          "Your trusted partner in medical technology.",
-          style: TextStyle(
-            color: isDark ? Colors.grey[400] : Colors.grey[600],
-          ),
+           offer.supplier.companyName,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+         // style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
+        // const SizedBox(height: 4),
+        // Text(
+        //   "Your trusted partner in medical technology.",
+        //   style: TextStyle(
+        //     color: isDark ? Colors.grey[400] : Colors.grey[600],
+          
+        // ),
+        // )
+  
       ],
     ),
   );
 }
-Widget _supplierNote(bool isDark) {
+Widget _supplierNote(bool isDark ,OfferRequest offer) {
   return Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
@@ -127,22 +141,25 @@ Widget _supplierNote(bool isDark) {
                 : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const Text(
-            "“We are pleased to confirm our bid. All requested items are in stock and can be prepared for shipment within 2 business days. We've included a complimentary box of N95 masks with your order. Thank you for choosing us!”",
-            style: TextStyle(fontStyle: FontStyle.italic),
+          child: Text(
+              offer.notes ?? "No notes provided.",
+            style: const TextStyle(fontStyle: FontStyle.italic),
           ),
         ),
       ],
     ),
   );
 }
-Widget _budgetSection(bool isDark) {
+Widget _budgetSection(bool isDark, OfferRequest offer, String budget) {
+  // TODO: جلب الـ original budget من الـ custom request
+ // final originalBudget = "15,000"; // مؤقت
+  
   return Row(
     children: [
       Expanded(
         child: _budgetCard(
           title: "Your Budget",
-          value: "\$15,000",
+          value: "\$$budget",
           strike: true,
           isDark: isDark,
         ),
@@ -151,7 +168,7 @@ Widget _budgetSection(bool isDark) {
       Expanded(
         child: _budgetCard(
           title: "Accepted Budget",
-          value: "\$14,500",
+          value: "\$${offer.price}",
           highlight: true,
           isDark: isDark,
         ),
@@ -207,7 +224,7 @@ Widget _budgetCard({
     ),
   );
 }
-Widget _statusCard(bool isDark) {
+Widget _statusCard(bool isDark,OfferRequest offer) {
   return Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
@@ -230,9 +247,9 @@ Widget _statusCard(bool isDark) {
             color: AppColors.assignedBg,
             borderRadius: BorderRadius.circular(999),
           ),
-          child: const Text(
-            "Assigned",
-            style: TextStyle(
+          child: Text(
+            offer.status,
+            style: const TextStyle(
               color: AppColors.assigned,
               fontWeight: FontWeight.bold,
             ),

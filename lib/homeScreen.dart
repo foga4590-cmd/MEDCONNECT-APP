@@ -897,14 +897,22 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
             backgroundColor: Colors.amber,
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
-          onPressed: () {
-            // TODO: استدعاء API الـ Notify Me
+          onPressed:  () async {
+        try {
+          final result = await _apiService.requestRestockNotification(p.id);
+          if (result['success'] == true) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("We will notify you when available"),
-              ),
+              const SnackBar(content: Text("Notification requested! We'll notify you when back in stock")),
             );
-          },
+          } else {
+            throw Exception(result['error']);
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+          );
+        }
+      },
           child: const Text(
             "Notify Me",
             style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
@@ -925,38 +933,28 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
               backgroundColor: Colors.blue,
               padding: EdgeInsets.symmetric(vertical: 14),
             ),
-            onPressed: () async {  //there is change by mohamed
-              final result = await _cartService.addToCart(
+            onPressed: () async { 
+               //there is change by mohamed
+               try{
+              final result = await _apiService.addToCart(
                 productId: p.id,
                 quantity: 1,
                 type: "sale",
               );
 
-              if (result['success'] != false) {
-                // ✅ ضيفه local برضو لو عايز
-                cartItemsGlobal.add(
-                  CartItem(
-                    daily_rent: 0,
-                    name: p.name,
-                    image: p.imagePath,
-                    quantity: 1,
-                    price: p.price,
-                    type: 'sale',
-                    dateRange: '',
-                    id: p.id,
-                    productId: p.id,
-                  ),
-                );
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("${p.name} added to cart ✅")),
-                );
-              } else { //there is change by mohamed
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result['message'] ?? "Error")),
-                );
-              }
-            },
+              if (result['success'] == true) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("${p.name} added to cart (Buy)")),
+              );
+            } else {
+              throw Exception(result['error']);
+            }
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+            );
+          }
+        },
             child: const Text(
               "Add To Cart",
               style: TextStyle(
@@ -978,25 +976,26 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
                 backgroundColor: Colors.green,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              onPressed: () {
-                cartItemsGlobal.add(
-                  CartItem(
-                    name: p.name,
-                    image: p.imagePath,
-                    quantity: 1,
-                    price: 0,
-                    type: 'rent',
-                    dateRange: '',
-                    daily_rent: 50,
-                    id: p.id,
-                    productId: p.id,
-                  ),
-                );
-
+              onPressed: () async {
+            try {
+              final result = await _apiService.addToCart(
+                productId: p.id,
+                quantity: 1,
+                type: 'rent',
+              );
+              if (result['success'] == true) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("${p.name} added to cart (Rent)")),
                 );
-              },
+              } else {
+                throw Exception(result['error']);
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+              );
+            }
+          },
               child: const Text(
                 "Rent",
                 style: TextStyle(

@@ -691,6 +691,164 @@ String cleanBody = response.body;
   }
 }
 //##################################
+// ###### new editing ##############
+Future<Map<String, dynamic>> respondToOffer({
+  required int offerId,
+  required String response, // 'accepted' or 'rejected'
+}) async {
+  try {
+    if (_token == null) throw Exception('Please login first');
+
+    final responseBody = jsonEncode({'response': response});
+
+    final httpResponse = await http.post(
+      Uri.parse('$baseUrl/v1/offerRequest/doctor/response/$offerId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+        'Content-Type': 'application/json',
+      },
+      body: responseBody,
+    );
+
+    print('📦 Respond to Offer Response (${httpResponse.statusCode}): ${httpResponse.body}');
+
+    if (httpResponse.statusCode == 200) {
+      return jsonDecode(httpResponse.body);
+    } else {
+      final data = jsonDecode(httpResponse.body);
+      throw Exception(data['error'] ?? 'Failed to respond to offer');
+    }
+  } catch (e) {
+    print('❌ Error responding to offer: $e');
+    throw Exception('Error: $e');
+  }
+}
+
+// ------------------- Restock Notification -------------------
+Future<Map<String, dynamic>> requestRestockNotification(int productId) async {
+  try {
+    if (_token == null) throw Exception('Please login first');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/v1/restock-notification/request/$productId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+    );
+
+    print('📦 Restock Notification Response (${response.statusCode}): ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      final data = jsonDecode(response.body);
+      throw data['error'] ?? 'Failed to request notification';
+    }
+  } catch (e) {
+    print('❌ Error: $e');
+    throw 'Error: $e';
+  }
+}
+
+Future<Map<String, dynamic>> undoRestockNotification(int productId) async {
+  try {
+    if (_token == null) throw Exception('Please login first');
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/v1/restock-notification/undo/$productId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+    );
+
+    print('📦 Undo Restock Notification Response (${response.statusCode}): ${response.body}');
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final data = jsonDecode(response.body);
+      throw data['error'] ?? 'Failed to undo notification';
+    }
+  } catch (e) {
+    print('❌ Error: $e');
+    throw 'Error: $e';
+  }
+}
+
+// ------------------- Cart -------------------
+Future<Map<String, dynamic>> addToCart({
+  required int productId,
+  required int quantity,
+  required String type, // 'sale' or 'rent'
+}) async {
+  try {
+    if (_token == null) throw Exception('Please login first');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/v1/cart/add/$productId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'quantity': quantity,
+        'type': type,
+      }),
+    );
+
+    print('📦 Add to Cart Response (${response.statusCode}): ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      final data = jsonDecode(response.body);
+      throw data['error'] ?? 'Failed to add to cart';
+    }
+  } catch (e) {
+    print('❌ Error: $e');
+    throw 'Error: $e';
+  }
+}
+// ------------------- Add Review -------------------
+Future<Map<String, dynamic>> addReview({
+  required int productId,
+  required int rating,
+  required String comment,
+}) async {
+  try {
+    if (_token == null) throw Exception('Please login first');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/v1/product/review/add/$productId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'rating': rating,
+        'comment': comment,
+      }),
+    );
+
+    print('📦 Add Review Response (${response.statusCode}): ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      final data = jsonDecode(response.body);
+      throw data['error'] ?? 'Failed to add review';
+    }
+  } catch (e) {
+    print('❌ Error adding review: $e');
+    throw 'Error: $e';
+  }
+}
+//##################################
   Future<void> _saveToken(String token) async {
     print('💾 _saveToken called with: $token');
 
