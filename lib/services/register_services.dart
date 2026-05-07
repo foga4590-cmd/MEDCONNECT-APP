@@ -13,7 +13,6 @@ class ApiService {
     required String email,
     required String password,
     required String address,
-    required String governorate,
     required String nationalId,
     required String phone,
     required String licenseNumber,
@@ -32,14 +31,13 @@ class ApiService {
       });
 
       // إضافة الحقول النصية
-      request.fields['full_name'] = 'دكتورة هبة عماد الدين';
-      request.fields['email'] = 'hagertestingacc@gmail.com';
-      request.fields['password'] = 'P@ssword123';
-      request.fields['address'] = 'zagazig';
-      request.fields['governorate'] = 'elsharqia';
-      request.fields['national_id'] = '28809181234570';
-      request.fields['phone'] = '12345678910';
-      request.fields['license_number'] = 'LIC-2022-004-CAI';
+      request.fields['full_name'] = fullName;
+      request.fields['email'] = email;
+      request.fields['password'] = password;
+      request.fields['address'] = address;
+      request.fields['national_id'] = nationalId;
+      request.fields['phone'] = phone;
+      request.fields['license_number'] = licenseNumber;
 
       // إضافة الصورة لو موجودة
       if (profileImage != null) {
@@ -101,7 +99,7 @@ print('🔄 ========== END OF RESPONSE ==========\n');
 var responseData = json.decode(response.body);
 
 if (response.statusCode == 200 || response.statusCode == 201) {
-  print('✅ SUCCESS: Registration successful'); // رسالة نجاح
+  print(responseData['message'] ?? 'Registration successful'); // رسالة نجاح
   return {
     'success': true,
     'data': responseData,

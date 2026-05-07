@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/services/payment_services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:medconnect_app/doctorAccount.dart';
 
 
 class CheckoutPaymentPage extends StatefulWidget {
@@ -12,6 +15,15 @@ class CheckoutPaymentPage extends StatefulWidget {
 class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   String selectedPayment =
       "cod"; // cod = Cash on Delivery, online = Online Payment
+  
+  bool isLoading = false;
+  
+  // بيانات الحجز (Rental)
+  String? selectedProductId;
+  String? rentalStartDate;
+  String? rentalEndDate;
+  String orderType = "sale";
+   // sale أو rental
 
   @override
   Widget build(BuildContext context) {
@@ -301,15 +313,212 @@ double total = subtotal + insurance + delivery ;
           backgroundColor: const Color(0xFF0D6EFD),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        onPressed: () {},
-        child: const Text(
-          'Place Order',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        onPressed: isLoading ? null : () => _handlePlaceOrder(),
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Place Order',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      ),
+    );
+  }
+
+  /// ✅ دالة التعامل مع طلب الدفع
+  Future<void> _handlePlaceOrder() async {
+   
+    // ✅ التحقق من وجود منتجات
+    if (cartItemsGlobal.isEmpty) {
+      _showErrorDialog('Your cart is empty');
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      // ✅ معالجة كل منتج في السلة
+      for (var item in cartItemsGlobal) {
+        final response = selectedPayment == 'cod'
+            ? await PaymentService.placeCashOrder(
+                orderType: orderType,
+                productId: item.id.toString(),
+                quantity: item.quantity,
+                rentalStartDate:
+                    orderType == 'rental' ? rentalStartDate : null,
+                rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
+              )
+            : await PaymentService.placeOnlineOrder(
+                orderType: orderType,
+                productId: item.id.toString(),
+                quantity: item.quantity,
+                rentalStartDate:
+                    orderType == 'rental' ? rentalStartDate : null,
+                rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
+              );
+
+        if (!mounted) return;
+
+        if (response['success'] == true) {
+          // ✅ نجح الطلب
+          final link = response['redirectTo']; // 🔗 الحصول على الرابط من الاستجابة
+          final invoice = response['invoice'];
+          final message = response['status'] ?? 'Order placed successfully';
+
+          if (selectedPayment == 'online' && link != null && link.isNotEmpty) {
+            print('🔗 Opening payment link: $link');
+            await _launchURL(link);
+            _showSuccessDialog(
+              message: message,
+              invoice: invoice,
+              paymentLink: link,
+            );
+          } else {
+            _showSuccessDialog(
+              message: message,
+              invoice: invoice,
+              paymentLink: selectedPayment == 'online' ? link : null,
+            );
+          }
+        } else {
+          // ❌ فشل الطلب
+          _showErrorDialog(
+            response['status'] ?? response['error'] ?? 'Failed to place order',
+          );
+          return; // توقف عند أول خطأ
+        }
+      }
+    } catch (e) {
+      print('❌ Exception: $e');
+      if (mounted) {
+        _showErrorDialog('An unexpected error occurred: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
+
+  /// 🔗 دالة فتح الرابط
+  Future<void> _launchURL(String url) async {
+    try {
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(
+          Uri.parse(url),
+          mode: LaunchMode.externalApplication,
+        );
+        // بعد ما ينهي الدفع ويرجع، ندير عملية نظيفة
+        print('✅ Payment link opened');
+      } else {
+        print('❌ Could not launch URL: $url');
+        _showErrorDialog('Could not open payment page. Please try again.');
+      }
+    } catch (e) {
+      print('❌ Error launching URL: $e');
+      _showErrorDialog('Error opening payment page: $e');
+    }
+  }
+
+  /// ✅ عرض نافذة النجاح
+  void _showSuccessDialog({
+    required String message,
+    String? invoice,
+    String? paymentLink,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Text('Order Successful'),
+          ],
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            if (invoice != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Invoice: $invoice',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0D6EFD),
+                ),
+              ),
+            ],
+            if (paymentLink != null && paymentLink.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SelectableText(
+                paymentLink,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF0D6EFD),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _launchURL(paymentLink);
+                },
+                child: const Text('Open Payment Page'),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // أغلق النافذة
+              // 🚀 اذهب إلى Doctor Account بدلاً من الرجوع للـ checkout
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => doctorAccountPage()),
+                (route) => false,
+              );
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ❌ عرض نافذة الخطأ
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Error'),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

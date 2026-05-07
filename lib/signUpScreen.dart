@@ -5,7 +5,6 @@ import 'package:medconnect_app/signinScreen.dart';
 import 'package:flutter/services.dart';
 import 'package:medconnect_app/services/register_services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:io';
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -19,7 +18,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final selectedGovernorateController = TextEditingController();
     // أضف المتحكمات لباقي الحقول
   final fullNameController = TextEditingController();
   final nationalIdController = TextEditingController();
@@ -35,66 +33,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   // متغير للـ loading
   bool isLoading = false;
   
-  void _showGovernorateSheet() {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (_) {
-      return ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: egyptGovernorates.length,
-        separatorBuilder: (_, __) => const Divider(),
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(egyptGovernorates[index]),
-            onTap: () {
-              setState(() {
-                selectedGovernorate = egyptGovernorates[index];
-              });
-              Navigator.pop(context);
-            },
-          );
-        },
-      );
-    },
-  );
-}
+  
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  String? selectedGovernorate;
 
-final List<String> egyptGovernorates = [
-  'Cairo',
-  'Giza',
-  'Alexandria',
-  'Dakahlia',
-  'Red Sea',
-  'Beheira',
-  'Fayoum',
-  'Gharbia',
-  'Ismailia',
-  'Menofia',
-  'Minya',
-  'Qaliubiya',
-  'New Valley',
-  'Suez',
-  'Aswan',
-  'Assiut',
-  'Beni Suef',
-  'Port Said',
-  'Damietta',
-  'Sharkia',
-  'South Sinai',
-  'Kafr El Sheikh',
-  'Matrouh',
-  'Luxor',
-  'Qena',
-  'North Sinai',
-  'Sohag',
-];
+
   // دالة اختيار الصورة
   Future<void> pickImage() async {
     try {
@@ -130,7 +74,6 @@ final List<String> egyptGovernorates = [
         email: emailController.text.trim(),
         password: _passwordController.text,
         address: addressController.text.trim(),
-        governorate: selectedGovernorate!,
         nationalId: nationalIdController.text.trim(),
         phone: phoneController.text.trim(),
         licenseNumber: licenseNumberController.text.trim(),
@@ -138,42 +81,43 @@ final List<String> egyptGovernorates = [
       );
 
       if (result['success']) {
-        Fluttertoast.showToast(
-          msg: "Registration successful!",
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-        );
-        
-        Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (_) => HomeScreen())
-        );
-      } else {
-        String errorMessage = result['message'] ?? 'Registration failed';
-        
-        if (result['errors'] != null && result['errors'].isNotEmpty) {
-          errorMessage = result['errors'].values.first[0];
-        }
-        
-        Fluttertoast.showToast(
-          msg: errorMessage,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-        );
-      }
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: "An error occurred. Please try again.",
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(result['message'] ?? "Registration successful!"),
+      backgroundColor: Colors.green,
+    ),
+  );
+
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (_) => HomeScreen()),
+  );
+} else {
+  String errorMessage = result['error'] ?? 'Registration failed';
+
+  if (result['errors'] != null && result['errors'].isNotEmpty) {
   }
 
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(errorMessage),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
+} catch (e) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text("An error occurred. Please try again."),
+      backgroundColor: Colors.red,
+    ),
+  );
+} finally {
+  setState(() {
+    isLoading = false;
+  });
+}
+  }
 
   @override
     @override
@@ -186,7 +130,6 @@ final List<String> egyptGovernorates = [
     licenseNumberController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    selectedGovernorateController.dispose();
     super.dispose();
   }
   @override
@@ -292,15 +235,7 @@ Row(
                     const SizedBox(height: 32),
                     const Text('Account Information', style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
-                    _buildTextField(
-                   label: 'governorate',
-                   readOnly: true,
-                   hintText: '$selectedGovernorate',
-                  suffixIcon: const Icon(Icons.arrow_drop_down),
-                  validator: (v) => selectedGovernorate == null ? 'Required' : null,
-                  onTap: () => _showGovernorateSheet(),
-                  ),
-
+                    
                     _buildTextField(
                       label: 'email',
                       keyboardType: TextInputType.emailAddress,
@@ -432,3 +367,4 @@ child: isLoading
     );
   }
 }
+
