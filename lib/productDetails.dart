@@ -4,6 +4,7 @@ import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/models/review.dart';
 import 'package:medconnect_app/services/api_service.dart';
+import 'package:medconnect_app/services/cart_services.dart';
 import 'package:medconnect_app/supplierProfile.dart';
 import 'package:provider/provider.dart';
 import '../providers/wishlist_provider.dart';
@@ -53,8 +54,28 @@ List<Review> get reviews => _product?.reviews ?? [];
     //print(" product config : ${_product!.configuration}");
     try {
       final freshproduct = await _apiService.fetchProductById(widget.productId);
+      final reviews = await _apiService.getProductReviews(widget.productId);
       setState(() {
         _product = freshproduct;
+        _product = Product(
+        id: freshproduct.id,
+        supplierId: freshproduct.supplierId,
+        name: freshproduct.name,
+        brand: freshproduct.brand,
+        price: freshproduct.price,
+        imagePath: freshproduct.imagePath,
+        stock: freshproduct.stock,
+        isRentable: freshproduct.isRentable,
+        restockDate: freshproduct.restockDate,
+        status: freshproduct.status,
+        images: freshproduct.images,
+        description: freshproduct.description,
+        specification: freshproduct.specification,
+        warranty: freshproduct.warranty,
+        setupDuration: freshproduct.setupDuration,
+        supplierData: freshproduct.supplierData,
+        reviews: reviews, // ✅ من API منفصل
+      );
         isLoading = false;
       });
     } catch (e) {
@@ -923,6 +944,15 @@ double get averageRating {
                     "${r.createdAt.day}/${r.createdAt.month}/${r.createdAt.year}",
                     style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
+
+                    if (r.doctorId == ApiService.doctorId) // تقييم المستخدم الحالي
+                      IconButton(
+                        onPressed: () => _deleteReview(r),
+                        icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                      ),
+
+
+
                 ],
               ),
               const SizedBox(height: 6),
@@ -1051,6 +1081,72 @@ Future<void> _submitReview() async {
       );
     } else {
       throw result['error'] ?? 'Failed to submit review';
+    }
+  } catch (e) {
+    setState(() => isLoading = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+    );
+  }
+}
+Future<void> _deleteReview(Review review) async {
+  final shouldDelete = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete Review'),
+      content: const Text('Are you sure you want to delete this review?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
+
+  if (shouldDelete != true) return;
+
+  setState(() => isLoading = true);
+
+  try {
+    final result = await _apiService.deleteReview(review.id);
+    
+    if (result['success'] == true) {
+      // ✅ إزالة التقييم من القائمة محلياً
+      setState(() {
+        final updatedReviews = List<Review>.from(_product!.reviews);
+        updatedReviews.removeWhere((r) => r.id == review.id);
+        _product = Product(
+          id: _product!.id,
+          supplierId: _product!.supplierId,
+          name: _product!.name,
+          brand: _product!.brand,
+          price: _product!.price,
+          imagePath: _product!.imagePath,
+          stock: _product!.stock,
+          isRentable: _product!.isRentable,
+          restockDate: _product!.restockDate,
+          status: _product!.status,
+          images: _product!.images,
+          description: _product!.description,
+          specification: _product!.specification,
+          warranty: _product!.warranty,
+          setupDuration: _product!.setupDuration,
+          supplierData: _product!.supplierData,
+          reviews: updatedReviews,
+        );
+        isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Review deleted successfully!')),
+      );
+    } else {
+      throw Exception(result['error'] ?? 'Failed to delete review');
     }
   } catch (e) {
     setState(() => isLoading = false);
@@ -1230,7 +1326,9 @@ Future<void> _submitReview() async {
   // );
 
   // ---------------- ACTION BUTTON ----------------
+  final CartService _cartService = CartService();
   Widget _actionButton() => Padding(
+    
     padding: const EdgeInsets.all(12),
     child: ElevatedButton(
       style: ElevatedButton.styleFrom(
@@ -1239,24 +1337,41 @@ Future<void> _submitReview() async {
             ? Colors.grey
             : (selectedPurchase == 0 ? Colors.green : Colors.blue),
       ),
+      
       onPressed: _product!.stock == 0
           ? null // disabled
-          : () {
-              // إضافة للمنتج
-              cartItemsGlobal.add(
-                CartItem(
-                  name: _product!.name,
-                  image: _product!.imagePath,
-                  quantity: 1,
-                  price: _product!.price,
-                  type: selectedPurchase == 0 ? "rent" : "buy",
-                  dateRange: selectedPurchase == 0 ? "3 Days" : "",
-                  daily_rent: 50,
-                  id: _product!.id,
-                  
-                  productId: _product!.id,),
+          : () async {  //there is change by mohamed
+              final result = await _cartService.addToCart(
+                productId: _product!.id,
+                quantity: 1,
+                type: "sale",
               );
 
+              if (result['success'] != false) {
+                // ✅ ضيفه local برضو لو عايز
+                cartItemsGlobal.add(
+                  CartItem(
+                    daily_rent: 0,
+                    name: _product!.name,
+                    image: _product!.imagePath,
+                    quantity: 1,
+                    price: _product!.price,
+                    type: 'sale',
+                    dateRange: '',
+                    id: _product!.id,
+                    productId: _product!.id,
+                  ),
+                );
+
+              //   ScaffoldMessenger.of(context).showSnackBar(
+              //     SnackBar(content: Text("${p.name} added to cart ✅")),
+              //   );
+              // } else { //there is change by mohamed
+              //   ScaffoldMessenger.of(context).showSnackBar(
+              //     SnackBar(content: Text(result['message'] ?? "Error")),
+              //   );
+              // }
+            
               // SnackBar
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -1283,7 +1398,12 @@ Future<void> _submitReview() async {
                   ),
                 ),
               );
-            },
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['message'] ?? "Error")),
+                );
+              }
+          },
       child: Text(
         _product!.stock == 0
             ? "Out of Stock"

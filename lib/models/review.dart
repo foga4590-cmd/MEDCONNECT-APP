@@ -5,6 +5,7 @@ class Review {
   final String comment;
   final DateTime createdAt;
   final String? doctorName;
+  bool canDelete ;
 
   Review({
     required this.id,
@@ -13,6 +14,7 @@ class Review {
     required this.comment,
     required this.createdAt,
     this.doctorName,
+    this.canDelete = false,
   });
 
   factory Review.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Review {
       comment: json['comment'],
       createdAt: DateTime.parse(json['created_at']),
       doctorName: json['doctor_name'],
+      
     );
   }
 }

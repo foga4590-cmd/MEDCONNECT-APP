@@ -14,11 +14,16 @@ import 'package:medconnect_app/models/category.dart';
 import 'package:medconnect_app/models/custom_request_model.dart';
 import 'package:medconnect_app/models/offer_request.dart';
 import 'package:medconnect_app/models/product.dart';
+import 'package:medconnect_app/models/review.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   static const String baseUrl = 'https://medconnect-one-pi.vercel.app/api/api';
 
+static int? get doctorId => _doctorId;
+static int? _doctorId;
+static String? get doctorName => _doctorName;
+static String? _doctorName;
   static String? _token;
 //static Map<String, dynamic>? _cachedSupplierData;
   Future<Map<String, dynamic>> login({
@@ -85,12 +90,21 @@ class ApiService {
       if (response.statusCode == 200) {
         print('✅ Login success - status 200');
         print('📦 Data: ${data['data']}');
+       
+        
 
         // تخزين التوكن
         if (data['data'] != null && data['token'] != null) {
           print('💾 Found token: ${data['token']}');
           await _saveToken(data['token']);
           await _saveUserData(data['data']);
+
+
+           _doctorId = data['data']['id'];
+           _doctorName = data['data']['fullname'];
+
+
+           
         } else {
           print('❌ Token not found in response!');
           print('🔍 data["data"]: ${data['data']}');
@@ -115,6 +129,7 @@ class ApiService {
       };
     }
   }
+
 
   Future<Map<String, dynamic>> logout() async {
     try {
@@ -788,6 +803,7 @@ Future<Map<String, dynamic>> addToCart({
     if (_token == null) throw Exception('Please login first');
 
     final response = await http.post(
+
       Uri.parse('$baseUrl/v1/cart/add/$productId'),
       headers: {
         'Accept': 'application/json',
@@ -848,6 +864,65 @@ Future<Map<String, dynamic>> addReview({
     throw 'Error: $e';
   }
 }
+// ------------------- Get Product Reviews -------------------
+Future<List<Review>> getProductReviews(int productId) async {
+  try {
+    if (_token == null) throw Exception('Please login first');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/v1/product/review/show/$productId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+    );
+
+    print('📦 Get Reviews Response (${response.statusCode}): ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) {
+        final List<dynamic> reviewsData = data['data'];
+        return reviewsData.map((json) => Review.fromJson(json)).toList();
+      } else {
+        throw Exception(data['message'] ?? 'Failed to fetch reviews');
+      }
+    } else {
+      throw Exception('Failed to fetch reviews');
+    }
+  } catch (e) {
+    print('❌ Error fetching reviews: $e');
+    throw Exception('Error: $e');
+  }
+}
+
+// ------------------- Delete Review -------------------
+Future<Map<String, dynamic>> deleteReview(int reviewId) async {
+  try {
+    if (_token == null) throw Exception('Please login first');
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/v1/product/review/delete/$reviewId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+    );
+
+    print('📦 Delete Review Response (${response.statusCode}): ${response.body}');
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      final data = jsonDecode(response.body);
+      throw Exception(data['error'] ?? 'Failed to delete review');
+    }
+  } catch (e) {
+    print('❌ Error deleting review: $e');
+    throw Exception('Error: $e');
+  }
+}
+
 //##################################
   Future<void> _saveToken(String token) async {
     print('💾 _saveToken called with: $token');

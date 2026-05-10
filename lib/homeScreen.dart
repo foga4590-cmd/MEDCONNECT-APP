@@ -923,6 +923,7 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
 
     // ✅ حالة 3: منتج متاح (stock > 0)
     // Rent + Add To Cart (يظهر Rent فقط لو isRentable == true)
+    final CartService _cartService = CartService();
     return Row(
       children: [
         // ---------- Add To Cart ----------
@@ -933,28 +934,60 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
               backgroundColor: Colors.blue,
               padding: EdgeInsets.symmetric(vertical: 14),
             ),
-            onPressed: () async { 
-               //there is change by mohamed
-               try{
-              final result = await _apiService.addToCart(
+            onPressed: () async {  //there is change by mohamed
+              final result = await _cartService.addToCart(
                 productId: p.id,
                 quantity: 1,
                 type: "sale",
               );
 
-              if (result['success'] == true) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("${p.name} added to cart (Buy)")),
-              );
-            } else {
-              throw Exception(result['error']);
-            }
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
-            );
-          }
-        },
+              if (result['success'] != false) {
+                // ✅ ضيفه local برضو لو عايز
+                cartItemsGlobal.add(
+                  CartItem(
+                    daily_rent: 0,
+                    name: p.name,
+                    image: p.imagePath,
+                    quantity: 1,
+                    price: p.price,
+                    type: 'sale',
+                    dateRange: '',
+                    id: p.id,
+                    productId: p.id,
+                  ),
+                );
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("${p.name} added to cart ✅")),
+                );
+              } else { //there is change by mohamed
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['message'] ?? "Error")),
+                );
+              }
+            },
+        //     onPressed: () async { 
+        //        //there is change by mohamed
+        //        try{
+        //       final result = await _cartService.addToCart(
+        //         productId: p.id,
+        //         quantity: 1,
+        //         type: "sale",
+        //       );
+
+        //       if (result['success'] == true) {
+        //       ScaffoldMessenger.of(context).showSnackBar(
+        //         SnackBar(content: Text("${p.name} added to cart (Buy)")),
+        //       );
+        //     } else {
+        //       throw Exception(result['error']);
+        //     }
+        //   } catch (e) {
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+        //     );
+        //   }
+        // },
             child: const Text(
               "Add To Cart",
               style: TextStyle(
