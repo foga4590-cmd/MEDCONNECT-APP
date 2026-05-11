@@ -923,6 +923,85 @@ Future<Map<String, dynamic>> deleteReview(int reviewId) async {
   }
 }
 
+//################################
+
+// في api_service.dart
+
+// جلب كل المحادثات (للدكتور)
+Future<List<dynamic>> getConversations() async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/v1/conversations'),
+    headers: _authHeaders(), // Authorization header
+  );
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['data'];
+  }
+  throw Exception('Failed to load conversations');
+}
+
+
+
+Future<List<dynamic>> getMessages(int convId) async {
+  final res = await http.get(
+    Uri.parse('$baseUrl/v1/conversations/$convId/messages'),
+    headers: _authHeaders(),
+  );
+  if (res.statusCode == 200) {
+    return jsonDecode(res.body)['data'];
+  }
+  throw Exception('Failed to load messages');
+}
+
+
+// جلب جهات الاتصال (للمورد)
+Future<List<dynamic>> getContacts() async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/v1/conversations/contacts'),
+    headers: _authHeaders(),
+  );
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['data'];
+  }
+  throw Exception('Failed to load contacts');
+}
+
+// تعليم المحادثة كمقروءة
+Future<void> markConversationAsRead(int conversationId) async {
+  final response = await http.patch(
+    Uri.parse('$baseUrl/v1/conversations/$conversationId/read'),
+    headers: _authHeaders(),
+  );
+
+  if (response.statusCode != 200) {
+    throw Exception('Failed to mark as read');
+  }
+}
+Future<Map<String, dynamic>> sendMessage({required int receiverId, required String message}) async {
+  final res = await http.post(
+    Uri.parse('$baseUrl/v1/conversations/messages'),
+    headers: {
+      ..._authHeaders(),
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({
+      'receiver_id': receiverId,
+      'message': message,
+    }),
+  );
+  return jsonDecode(res.body);
+}
+
+// دالة الـ headers الموحدة
+Map<String, String> _authHeaders() {
+  return {
+    'Accept': 'application/json',
+    'Authorization': 'Bearer $_token',
+  };
+}
 //##################################
   Future<void> _saveToken(String token) async {
     print('💾 _saveToken called with: $token');
