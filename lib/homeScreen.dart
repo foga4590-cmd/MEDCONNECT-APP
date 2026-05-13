@@ -1000,35 +1000,27 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
         ),
 
         // ---------- Rent (يظهر فقط لو isRentable == true) ----------
-        if (p.isRentable) ...[
-          const SizedBox(width: 10),
+      if (p.isRentable)
+       const SizedBox(width: 10),
           Expanded(
             flex: 2,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              onPressed: () async {
-            try {
-              final result = await _apiService.addToCart(
-                productId: p.id,
-                quantity: 1,
-                type: 'rent',
-              );
-              if (result['success'] == true) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("${p.name} added to cart (Rent)")),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProductDetailsPage(
+                      productId: p.id,
+                      product: p,
+                      openRentTab: true,
+                    ),
+                  ),
                 );
-              } else {
-                throw Exception(result['error']);
-              }
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
-              );
-            }
-          },
+              },
               child: const Text(
                 "Rent",
                 style: TextStyle(
@@ -1040,7 +1032,7 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
             ),
           ),
         ],
-      ],
+      
     );
   }
 //#########################   comment by mohamed

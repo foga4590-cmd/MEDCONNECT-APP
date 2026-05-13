@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/checkoutPayment.dart';
+import 'package:medconnect_app/models/rental_item.dart';
 
 // ========== صفحة الـ Summary ==========
 class CheckoutSummaryPage extends StatelessWidget {
@@ -9,6 +10,8 @@ class CheckoutSummaryPage extends StatelessWidget {
   final double taxes;
   final double total;
   final Map<String, String> selectedAddress;
+  final bool isRentablMode; 
+  final RentalItem? rentalItem;
 
   const CheckoutSummaryPage({
     super.key,
@@ -16,7 +19,7 @@ class CheckoutSummaryPage extends StatelessWidget {
     required this.cartItems,
     required this.subtotal,
     required this.taxes,
-    required this.total,
+    required this.total, required this.isRentablMode, this.rentalItem,
   });
 
   @override
@@ -272,7 +275,10 @@ class CheckoutSummaryPage extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => CheckoutPaymentPage()),
+            MaterialPageRoute(builder: (_) => CheckoutPaymentPage(
+              isRentalMode: isRentablMode,
+              rentalItem:rentalItem
+            )),
           );
         },
         child: const Text(

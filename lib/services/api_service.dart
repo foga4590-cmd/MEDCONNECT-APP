@@ -1002,6 +1002,31 @@ Map<String, String> _authHeaders() {
     'Authorization': 'Bearer $_token',
   };
 }
+
+Future<bool> validateRent({
+  required int productId,
+  required int quantity,
+  required String startDate,
+  required String endDate,
+}) async {
+  final response = await http.post(
+    Uri.parse('$baseUrl/v1/validateRent/$productId'),
+    headers: _authHeaders(),
+    body: jsonEncode({
+      'quantity': quantity,
+      'rental_start_date': startDate,
+      'rental_end_date': endDate,
+    }),
+  );
+print("rent details : response body : ${response.body}");
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['success'] == true;
+  } else {
+    final error = jsonDecode(response.body)['error'];
+    throw Exception(error);
+  }
+}
 //##################################
   Future<void> _saveToken(String token) async {
     print('💾 _saveToken called with: $token');

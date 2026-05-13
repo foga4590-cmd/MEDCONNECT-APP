@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
+import 'package:medconnect_app/checkoutAddress.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/models/rental_item.dart';
 import 'package:medconnect_app/models/review.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/services/cart_services.dart';
@@ -14,7 +16,8 @@ import '../providers/wishlist_provider.dart';
 class ProductDetailsPage extends StatefulWidget {
   final int productId;
   final Product? product;
-  const ProductDetailsPage({super.key, required this.productId, this.product});
+    final bool openRentTab; 
+  const ProductDetailsPage({super.key, required this.productId, this.product,this.openRentTab = false});
 
   @override
   State<ProductDetailsPage> createState() => _ProductDetailsPageState();
@@ -35,6 +38,9 @@ List<Review> get reviews => _product?.reviews ?? [];
   void initState() {
     super.initState();
     _loadProduct();
+      if (widget.openRentTab) {
+    selectedPurchase = 0; // يفتح على تبويب Rent
+  }
   }
 
   Future<void> _loadProduct() async {
@@ -89,6 +95,7 @@ List<Review> get reviews => _product?.reviews ?? [];
   // -------- Rent --------
   DateTime? rentStartDate;
   DateTime? rentEndDate;
+  int rentQuantity = 1; 
 
   // -------- Buy --------
   String selectedConfig = "Standard Unit";
@@ -116,7 +123,50 @@ double get averageRating {
 
   bool isInWishlist = false;
   bool isInEquipmentList = false;
+
+
+
+Future<void> _rentNow() async {
+  String formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  }
+
+  final isValid = await _apiService.validateRent(
+    productId: _product!.id,
+    quantity: rentQuantity,
+    startDate: formatDate(rentStartDate!),
+    endDate: formatDate(rentEndDate!),
+  );
+
+  if (isValid) {
+    final rentalItem = RentalItem(
+      productId: _product!.id,
+      name: _product!.name,
+      price: _product!.price,
+      image: _product!.imagePath,
+      quantity: rentQuantity,
+      startDate: formatDate(rentStartDate!),
+      endDate: formatDate(rentEndDate!),
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CheckoutAddressPage(
+          isRentalMode: true,
+          rentalItem: rentalItem,
+        ),
+      ),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Rent validation failed')),
+    );
+  }
+}
+
   // ---------------- UI ----------------
+
   @override
   Widget build(BuildContext context) {
     (_isLoading) {
@@ -599,6 +649,8 @@ double get averageRating {
             Expanded(child: _dateBox("End Date", false)),
           ],
         ),
+         const SizedBox(height: 12),
+          _buildQuantitySelector(),
         const SizedBox(height: 16),
         locationAndSetupTime(),
         const Divider(),
@@ -615,7 +667,25 @@ double get averageRating {
       ],
     ),
   );
-
+Widget _buildQuantitySelector() {
+  return Row(
+    children: [
+      const Text('Quantity:'),
+      const Spacer(),
+      IconButton(
+        onPressed: rentQuantity > 1
+            ? () => setState(() => rentQuantity--)
+            : null,
+        icon: const Icon(Icons.remove),
+      ),
+      Text('$rentQuantity'),
+      IconButton(
+        onPressed: () => setState(() => rentQuantity++),
+        icon: const Icon(Icons.add),
+      ),
+    ],
+  );
+}
   Widget _dateBox(String title, bool isStart) => GestureDetector(
     onTap: () async {
       final picked = await showDatePicker(
@@ -1330,12 +1400,12 @@ Future<void> _deleteReview(Review review) async {
   Widget _actionButton() => Padding(
     
     padding: const EdgeInsets.all(12),
-    child: ElevatedButton(
+    child: selectedPurchase == 1 ? ElevatedButton(
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
         backgroundColor: _product!.stock == 0
             ? Colors.grey
-            : (selectedPurchase == 0 ? Colors.green : Colors.blue),
+            :  Colors.blue,
       ),
       
       onPressed: _product!.stock == 0
@@ -1376,9 +1446,8 @@ Future<void> _deleteReview(Review review) async {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    selectedPurchase == 0
-                        ? "Product added for rent 🛒"
-                        : "Product added to cart 🛒",
+                  
+                      "Product added to cart 🛒",
                   ),
                   duration: const Duration(seconds: 2),
                   backgroundColor: Colors.blue,
@@ -1409,14 +1478,24 @@ Future<void> _deleteReview(Review review) async {
             ? "Out of Stock"
             : (_product!.stock == 0 && _product!.restockDate != null
                   ? "Notify Me"
-                  : (selectedPurchase == 0 ? "Rent Now" : "Add To Cart")),
+                  : "Add To Cart"),
         style: const TextStyle(
           color: Colors.white,
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),
       ),
-    ),
+    ):ElevatedButton(
+       style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        backgroundColor: _product!.isRentable
+            ? Colors.blue
+            :  Colors.grey,
+      ),
+      
+    onPressed: _product!.isRentable ? _rentNow : null,
+    child: const Text('Rent Now'),
+  ),
   );
 
   // ---------------- HELPERS ----------------

@@ -13,11 +13,13 @@ class ChatModel {
   final int unreadCount;
 
   ChatModel({
+    
     required this.name,
     required this.lastMessage,
     required this.time,
     required this.isOnline,
     required this.unreadCount,
+
   });
 }
 

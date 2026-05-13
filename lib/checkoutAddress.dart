@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/checkoutSummary.dart';
+import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/models/rental_item.dart';
 import 'package:medconnect_app/services/Get_Doctor_Profile.dart';
 
 class CheckoutAddressPage extends StatefulWidget {
-   final List<CartItem> cartItems;
+
+final bool isRentalMode;
+  final RentalItem? rentalItem;
+
+
+
+   final List<CartItem> ?cartItems;
 
 
   const CheckoutAddressPage({super.key
-  , required this.cartItems,
+  , this.cartItems,
+    this.isRentalMode = false,
+    this.rentalItem,
   });
 
   @override
@@ -33,6 +43,29 @@ class _CheckoutAddressPageState extends State<CheckoutAddressPage> {
 
   final TextEditingController titleController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
+
+
+List<CartItem> get cartItemsForCheckout {
+  if (widget.isRentalMode && widget.rentalItem != null) {
+    return [
+      CartItem(
+        id: widget.rentalItem!.productId,
+        name: widget.rentalItem!.name,
+        image: widget.rentalItem!.image,
+        quantity: widget.rentalItem!.quantity,
+        price: widget.rentalItem!.price,
+        type: 'rent',
+        daily_rent: widget.rentalItem!.price / 30,
+         productId: widget.rentalItem!.productId,
+      ),
+    ];
+  }
+  return cartItemsGlobal;
+}
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -99,11 +132,13 @@ class _CheckoutAddressPageState extends State<CheckoutAddressPage> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => CheckoutSummaryPage(
-                        cartItems: widget.cartItems,
-                        subtotal: widget.cartItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
+                        cartItems: cartItemsForCheckout,
+                        subtotal: cartItemsForCheckout.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
                         taxes: 0.0,
                         total: 0.0,
                         selectedAddress: addresses[selectedAddress],
+                        isRentablMode:widget.isRentalMode,
+                        rentalItem:widget.rentalItem,
                      ),
                     )
                   );
