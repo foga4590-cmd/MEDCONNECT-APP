@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/core/app_colorResponse.dart';
-import 'package:medconnect_app/models/custom_request_model.dart';
 import 'package:medconnect_app/models/offer_request.dart';
-import 'package:medconnect_app/models/supplierBid.dart';
 import 'package:medconnect_app/myCustomRequests.dart';
-import 'package:medconnect_app/acceptedSupplier.dart';
 import 'package:medconnect_app/services/api_service.dart';
 
 class SupplierBidsPage extends StatefulWidget {

@@ -104,11 +104,8 @@ void initState() {
 }
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-  return const Scaffold(
-    body: Center(child: CircularProgressIndicator()),
-  );
-}
+    
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
 

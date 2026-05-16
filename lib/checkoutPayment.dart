@@ -14,6 +14,23 @@ class CheckoutPaymentPage extends StatefulWidget {
     super.key,
     this.isRentalMode = false,
     this.rentalItem,
+import 'package:medconnect_app/services/payment_services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:medconnect_app/doctorAccount.dart';
+import 'package:medconnect_app/cartScreen.dart'; // أضف هذا للاستيراد
+
+class CheckoutPaymentPage extends StatefulWidget {
+  final List<CartItem> cartItems; // ✅ أضف هذا
+  final double subtotal; // ✅ أضف هذا
+  final double total; // ✅ أضف هذا
+  final Map<String, String> selectedAddress; // ✅ أضف هذا
+
+  const CheckoutPaymentPage({
+    super.key,
+    required this.cartItems, // ✅ required
+    required this.subtotal, // ✅ required
+    required this.total, // ✅ required
+    required this.selectedAddress, // ✅ required
   });
 
   @override
@@ -73,17 +90,9 @@ List<CartItem> get orderItems {
                   children: [
                     _buildStepper(),
                     const SizedBox(height: 24),
-
-                    /// ===== Payment Options =====
                     _buildPaymentOptions(),
-
                     const SizedBox(height: 24),
-
-                    /// ===== Discount Code =====
-
-                    /// ===== Order Summary =====///
-                    _buildOrderSummary(),
-
+                    _buildOrderSummary(), // ✅ الآن تستخدم widget.cartItems
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -136,6 +145,7 @@ List<CartItem> get orderItems {
   }
   // ================= Payment Options =================
 
+  // ================= Payment Options =================
   Widget _buildPaymentOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +155,6 @@ List<CartItem> get orderItems {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 12),
-
         GestureDetector(
           onTap: () {
             setState(() {
@@ -158,9 +167,7 @@ List<CartItem> get orderItems {
             selected: selectedPayment == "cod",
           ),
         ),
-
         const SizedBox(height: 12),
-
         GestureDetector(
           onTap: () {
             setState(() {
@@ -216,7 +223,6 @@ List<CartItem> get orderItems {
   }
 
   // ================= Order Summary =================
-
   Widget _buildOrderSummary() {
 
       final items = orderItems;
@@ -293,6 +299,23 @@ List<CartItem> get orderItems {
           _priceRow('Delivery', '\$${delivery.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
           _priceRow('Total', '\$${total.toStringAsFixed(2)}', isTotal: true),
+          
+          // ✅ عرض عنوان التوصيل
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  widget.selectedAddress['address'] ?? 'No address',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -435,14 +458,14 @@ List<CartItem> get orderItems {
         final response = selectedPayment == 'cod'
             ? await PaymentService.placeCashOrder(
                 orderType: orderType,
-                productId: item.id.toString(),
+                productId: item.productId.toString(),
                 quantity: item.quantity,
                 rentalStartDate: orderType == 'rental' ? rentalStartDate : null,
                 rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
               )
             : await PaymentService.placeOnlineOrder(
                 orderType: orderType,
-                productId: item.id.toString(),
+                productId: item.productId.toString(),
                 quantity: item.quantity,
                 rentalStartDate: orderType == 'rental' ? rentalStartDate : null,
                 rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
@@ -473,11 +496,10 @@ List<CartItem> get orderItems {
             );
           }
         } else {
-          // ❌ فشل الطلب
           _showErrorDialog(
             response['status'] ?? response['error'] ?? 'Failed to place order',
           );
-          return; // توقف عند أول خطأ
+          return;
         }
       }
     } 
@@ -562,8 +584,7 @@ List<CartItem> get orderItems {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // أغلق النافذة
-              // 🚀 اذهب إلى Doctor Account بدلاً من الرجوع للـ checkout
+              Navigator.pop(context);
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => doctorAccountPage()),

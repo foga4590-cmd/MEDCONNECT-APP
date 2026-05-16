@@ -106,4 +106,45 @@ import 'package:shared_preferences/shared_preferences.dart';
     };
   }
 }
+String _lastMessage = '';
+String get lastMessage => _lastMessage;
+
+
+static Future<Map<String, dynamic>> getDoctorProfile() async {
+
+  try {
+
+    final prefs = await SharedPreferences.getInstance();
+
+    final token = prefs.getString('auth_token');
+
+    final response = await http.get(
+
+      Uri.parse(
+        "https://medconnect-one-pi.vercel.app/api/v1/doctor/profile",
+      ),
+
+      headers: {
+
+        "Accept": "application/json",
+
+        "Authorization": "Bearer $token",
+
+      },
+
+    );
+
+    print("PROFILE STATUS => ${response.statusCode}");
+    print("PROFILE BODY => ${response.body}");
+
+    return jsonDecode(response.body);
+
+  } catch (e) {
+
+    print("PROFILE ERROR => $e");
+
+    return {};
+
+  }
+}
  }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:medconnect_app/core/app_colorMycustom.dart';
 import 'package:medconnect_app/doctorAccount.dart';
 //import 'package:medconnect_app/customRequest.dart';
-import 'package:medconnect_app/doctorProfile.dart';
 import 'package:medconnect_app/models/custom_request_model.dart';
 import 'package:medconnect_app/responseScreen.dart';
 

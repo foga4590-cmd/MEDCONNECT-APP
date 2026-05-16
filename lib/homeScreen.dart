@@ -10,7 +10,7 @@ import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/services/search_services.dart';
 import 'package:provider/provider.dart';
 import '../models/Search_model.dart';
-import '../services/cart_services.dart';
+import 'package:medconnect_app/services/cart_services.dart';
 
 // ---------------------
 // GLOBAL LISTS
@@ -41,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isSearching = false;
   int? selectedCategoryId;
   bool showCategories = false;
-  final CartService _cartService = CartService();
   // دي جاية من API بتاعتك
   List<CategoryApiModel> categoriesApi = [];
   bool isLoadingCategoriesApi = false;
@@ -66,6 +65,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _productsError;
 
   final ApiService _apiService = ApiService();
+    final CartService _cartService = CartService();
+
   final ScrollController _scrollController = ScrollController();
 
   

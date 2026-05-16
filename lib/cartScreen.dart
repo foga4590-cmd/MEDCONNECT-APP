@@ -2,17 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:medconnect_app/checkoutAddress.dart';
 import 'package:medconnect_app/mainScreen.dart';
 import 'package:medconnect_app/services/cart_services.dart';
-import 'package:medconnect_app/homeScreen.dart';
 
 class CartItem {
   final int id; // 🔥 مهم
   final String name;
   final String image;
-  int quantity;
+   int quantity;
   final double price;
   final String type;
   final int productId; 
-
   final double daily_rent;
   String? dateRange;
   DateTime? rStartDate;
@@ -41,10 +39,10 @@ class CartPage extends StatefulWidget {
 
 class _CartPageState extends State<CartPage> {
   final CartService cartService = CartService();
-
-  late Future<List<dynamic>> cartItems;
-
+List<CartItem> cartItemsGlobal = [];
   bool isLoading = true;
+                        bool isUpdating = false; // أضف هذا المتغير
+
 
   @override
   void initState() {
@@ -52,60 +50,91 @@ class _CartPageState extends State<CartPage> {
     loadCart();
   }
 
-  Future<void> loadCart() async {
-    try {
-      final items = await getCartItemsMapped();
+ Future<void> loadCart() async {
+  try {
+    final data = await cartService.getCartItems();
+    final message = cartService.lastMessage;
 
+    final items = <CartItem>[]; // قائمة فارغة
+    
+    for (var item in data) {
+      try {
+        final product = item['product'];
+        
+        // استخراج الصورة بطريقة بسيطة وآمنة
+        String imageUrl = "";
+        try {
+          var imageField = product['image'];
+          if (imageField != null) {
+            // لو كانت Map
+            if (imageField is Map) {
+              var innerImage = imageField['image'];
+              if (innerImage is List && innerImage.isNotEmpty) {
+                var firstImage = innerImage[0];
+                if (firstImage is Map) {
+                  imageUrl = firstImage['image']?.toString() ?? "";
+                }
+              }
+            }
+            // لو كانت List
+            else if (imageField is List && imageField.isNotEmpty) {
+              var firstImage = imageField[0];
+              if (firstImage is Map) {
+                imageUrl = firstImage['image']?.toString() ?? "";
+              }
+            }
+            // لو كانت String
+            else if (imageField is String) {
+              imageUrl = imageField;
+            }
+          }
+        } catch (e) {
+          print("Image error: $e");
+          imageUrl = "";
+        }
+        
+        // إضافة المنتج للقائمة
+        items.add(CartItem(
+          id: item['id'] ?? 0,
+          name: product['name'] ?? 'Unknown',
+          image: imageUrl,
+          quantity: item['quantity'] ?? 1,
+          price: double.tryParse(product['price']?.toString() ?? '0') ?? 0.0,
+          type: item['type'] ?? 'sale',
+          daily_rent: 0,
+          productId: product['id'] ?? 0,
+        ));
+        
+      } catch (e) {
+        print("Error parsing item: $e");
+        continue; // تخطي العنصر الخاطئ ومتابعة الباقي
+      }
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      cartItemsGlobal = items;
+      isLoading = false;
+    });
+
+    if (message.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
+      );
+    }
+
+  } catch (e) {
+    print('Load cart error: $e');
+    if (mounted) {
       setState(() {
-        cartItemsGlobal = items;
         isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Cart returned successfully")));
     }
   }
-
-  Future<List<CartItem>> getCartItemsMapped() async {
-    final data = await cartService.getCartItems();
-    return data.map<CartItem>((item) {
-      final product = item['product'];
-
-      if (product['image']['image'] != null &&
-          product['image']['image'] is List &&
-          product['image']['image'].isNotEmpty) {
-        final firstImage = product['image']['image'][0];
-        print("First image object: $firstImage"); // 🔍
-
-      }
-      return CartItem(
-        id: item['id'],
-        name: product['name'],
-        image:
-            (product['image']['image'] != null &&
-                product['image']['image'] is List &&
-                product['image']['image'].isNotEmpty &&
-                product['image']['image'][0]['image'] != null)
-            ? product['image']['image'][0]['image']
-            : "",
-        quantity: item['quantity'],
-        price: double.parse(product['price'].toString()),
-        type: item['type'],
-        daily_rent: 0,
-        productId: product['id'], // مش موجود في API حالياً
-      );
-    }).toList();
-  }
-
+}
   @override
   Widget build(BuildContext context) {
-   final filteredItems = cartItemsGlobal;
-
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -142,10 +171,10 @@ class _CartPageState extends State<CartPage> {
                  
                   const SizedBox(height: 16),
 
-                  for (int i = 0; i < filteredItems.length; i++) ...[
+                  for (int i = 0; i < cartItemsGlobal.length; i++) ...[
                     buildCartItem(
-                      item: filteredItems[i],
-                      index: cartItemsGlobal.indexOf(filteredItems[i]),
+                      item: cartItemsGlobal[i],
+                      index: cartItemsGlobal.indexOf(cartItemsGlobal[i]),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -256,84 +285,161 @@ class _CartPageState extends State<CartPage> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _qtyButton(Icons.add, () async {
-                        setState(() {
-                          item.quantity += 1;
-                        });
-                        try {
-                          await cartService.updateCart(
-                            cartId: item.id,
-                            quantity: item.quantity,
-                          );
-                        } catch (e) {
-                          setState(() {
-                            item.quantity -= 1;
-                          });
-                          print("Error updating quantity: $e");
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Failed to update quantity")),
-                          );
-                        }
-                      }),
+
+_qtyButton(Icons.add, () async {
+  if (isUpdating) return; // لمنع الضغط المتكرر
+  
+  int newQuantity = item.quantity + 1;
+  int oldQuantity = item.quantity;
+  
+  setState(() {
+    isUpdating = true;
+  });
+  
+  try {
+    final response = await cartService.updateCart(
+      cartId: item.id,
+      quantity: newQuantity,
+    );
+    
+    setState(() {
+      item.quantity = newQuantity;
+      isUpdating = false;
+    });
+    
+    print('✅ API Response: ${response['message']}');
+     ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] ?? 'Quantity updated successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+        ),
+      );
+  } catch (e) {
+    setState(() {
+      item.quantity = oldQuantity;
+      isUpdating = false;
+    });
+    print('❌ Update failed: $e');
+  }
+}),
+
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Text('${item.quantity}'),
                       ),
 
-                      _qtyButton(Icons.remove, () async {
-                        if (item.quantity > 1) {
-                          setState(() {
-                            item.quantity -= 1;
-                          });
-                          try {
-                            await cartService.updateCart(
-                              cartId: item.id,
-                              quantity: item.quantity,
-                            );
-                          } catch (e) {
-                            setState(() {
-                              item.quantity += 1;
-                            });
-                            print("Error updating quantity: $e");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Failed to update quantity")),
-                            );
-                          }
-                        }
-                      }),
+                   _qtyButton(Icons.remove, () async {
+  if (isUpdating) return;
+
+  if (item.quantity > 1) {
+    int newQuantity = item.quantity - 1;
+    int oldQuantity = item.quantity;
+    
+    setState(() {
+      isUpdating = true;
+    });
+    
+    setState(() {
+      item.quantity = newQuantity;
+    });
+    
+    try {
+      final response = await cartService.updateCart(
+        cartId: item.id,
+        quantity: newQuantity,
+      );
+      
+      setState(() {
+        isUpdating = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response['message'] ?? 'Quantity updated successfully'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+        ),
+      );
+      
+    } catch (e) {
+      setState(() {
+        item.quantity = oldQuantity;
+        isUpdating = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to update quantity"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Minimum quantity is 1"),
+        backgroundColor: Colors.orange,
+      ),
+    );
+  }
+}),
                     ],
                   ),
                 ],
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () async {
-                    final confirm = await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: Text("Delete Item"),
-                        content: Text(
-                          "Are you sure you want to remove this item?",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: Text("Cancel"),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: Text("Delete"),
-                          ),
-                        ],
-                      ),
-                    );
+              IconButton(
+  icon: const Icon(Icons.delete_outline),
+  onPressed: () async {
+    final confirm = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Delete Item"),
+        content: Text(
+          "Are you sure you want to remove this item?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text("Delete"),
+          ),
+        ],
+      ),
+    );
 
-                    if (confirm == true) {
-                      await cartService.deleteCartItem(cartId: item.id);
-                      await loadCart();
-                    }
-                  },
-                ),
+    if (confirm == true) {
+      try {
+        // ✅ محاولة الحذف من الـ API
+         await cartService.deleteCartItem(cartId: item.id);
+            final message = cartService.lastMessage;
+
+        // ✅ عرض رسالة النجاح من الـ API
+       if (message.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
+      );
+    }
+        
+        // ✅ إعادة تحميل الكارت بعد الحذف
+        await loadCart();
+        
+      } catch (e) {
+        // ✅ عرض رسالة الخطأ إذا فشل الحذف
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to delete: ${e.toString()}"),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  },
+),
               ],
             ),
           ),
@@ -365,22 +471,21 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  Widget _qtyButton(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        width: 28,
-        height: 28,
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Icon(icon, size: 18),
+Widget _qtyButton(IconData icon, VoidCallback onTap) {
+  return InkWell(
+    onTap: onTap,  // خلاص كده - من غير أي شرط
+    child: Container(
+      width: 28,
+      height: 28,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(6),
       ),
-    );
-  }
-
+      child: Icon(icon, size: 18),
+    ),
+  );
+}
   // ================= ORDER SUMMARY =================
 
   Widget buildOrderSummary() {
@@ -388,9 +493,8 @@ class _CartPageState extends State<CartPage> {
   0,
   (sum, item) => sum + (item.price * item.quantity),
 );
-    double taxes = subtotal * 0.05;
-    double total = subtotal + taxes;
-
+    
+double total = subtotal; // + أي رسوم إضافية إذا كانت موجودة
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -407,7 +511,6 @@ class _CartPageState extends State<CartPage> {
 
           const SizedBox(height: 10),
           _row("Subtotal", subtotal),
-          _row("Estimated Taxes & Fees", taxes),
           const Divider(height: 24),
           _row("Total", total, isBold: true),
         ],

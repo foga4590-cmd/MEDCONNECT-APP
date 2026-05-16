@@ -299,6 +299,19 @@ class CheckoutSummaryPage extends StatelessWidget {
             )),
           );
         },
+      onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => CheckoutPaymentPage(
+        cartItems: cartItems,
+        subtotal: subtotal,
+        total: total,
+        selectedAddress: selectedAddress,
+      ),
+    ),
+  );
+},
         child: const Text(
           'Continue To Payment',
           style: TextStyle(
