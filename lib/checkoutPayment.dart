@@ -1,30 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/homeScreen.dart';
+import 'package:medconnect_app/models/rental_item.dart';
 import 'package:medconnect_app/services/payment_services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:medconnect_app/doctorAccount.dart';
 
-
 class CheckoutPaymentPage extends StatefulWidget {
+  final bool isRentalMode;
+  final RentalItem? rentalItem;
 
-   const CheckoutPaymentPage({super.key});
+  const CheckoutPaymentPage({
+    super.key,
+    this.isRentalMode = false,
+    this.rentalItem,
+  });
 
   @override
   State<CheckoutPaymentPage> createState() => _CheckoutPaymentPageState();
 }
+
 class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   String selectedPayment =
       "cod"; // cod = Cash on Delivery, online = Online Payment
-  
+
   bool isLoading = false;
-  
+
   // بيانات الحجز (Rental)
   String? selectedProductId;
   String? rentalStartDate;
   String? rentalEndDate;
   String orderType = "sale";
-   // sale أو rental
-
+  // sale أو rental
+List<CartItem> get orderItems {
+  if (widget.isRentalMode && widget.rentalItem != null) {
+    return [
+      CartItem(
+        id: widget.rentalItem!.productId,
+        productId: widget.rentalItem!.productId,
+        name: widget.rentalItem!.name,
+        image: widget.rentalItem!.image,
+        quantity: widget.rentalItem!.quantity,
+        price: widget.rentalItem!.price,
+        type: 'rent',
+        daily_rent: widget.rentalItem!.price / 30,
+      ),
+    ];
+  }
+  return cartItemsGlobal; // ✅ الكارت العادي
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,23 +74,17 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
                     _buildStepper(),
                     const SizedBox(height: 24),
 
-                   
                     /// ===== Payment Options =====
-                    
                     _buildPaymentOptions(),
 
-               const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
                     /// ===== Discount Code =====
-               
-
 
                     /// ===== Order Summary =====///
-                 
                     _buildOrderSummary(),
 
-               const SizedBox(height: 24),
-                      
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -75,9 +93,12 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
             _buildPlaceOrderButton(),
           ],
         ),
-      ),     
+      ),
     );
   }
+
+
+
 
   // ================= Stepper =================
   Widget _buildStepper() {
@@ -113,7 +134,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       ),
     );
   }
-// ================= Payment Options =================
+  // ================= Payment Options =================
 
   Widget _buildPaymentOptions() {
     return Column(
@@ -193,20 +214,23 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       ),
     );
   }
-  
 
   // ================= Order Summary =================
 
   Widget _buildOrderSummary() {
-    double subtotal = cartItemsGlobal.fold(
+
+      final items = orderItems;
+
+    
+    double subtotal = items.fold(
       0,
       (sum, item) => sum + (item.price * item.quantity),
     );
 
     double insurance = 50;
     double delivery = 25;
-    
-double total = subtotal + insurance + delivery ;
+
+    double total = subtotal + insurance + delivery;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
@@ -214,7 +238,7 @@ double total = subtotal + insurance + delivery ;
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ====== عرض المنتجات ديناميكياً ======
-          ...cartItemsGlobal.map((item) {
+          ...items.map((item) {
             return Column(
               children: [
                 Row(
@@ -301,8 +325,6 @@ double total = subtotal + insurance + delivery ;
     );
   }
 
-  
-
   // ================= Button =================
   Widget _buildPlaceOrderButton() {
     return SizedBox(
@@ -337,9 +359,8 @@ double total = subtotal + insurance + delivery ;
 
   /// ✅ دالة التعامل مع طلب الدفع
   Future<void> _handlePlaceOrder() async {
-   
     // ✅ التحقق من وجود منتجات
-    if (cartItemsGlobal.isEmpty) {
+    if (cartItemsGlobal.isEmpty && !widget.isRentalMode) {
       _showErrorDialog('Your cart is empty');
       return;
     }
@@ -347,23 +368,83 @@ double total = subtotal + insurance + delivery ;
     setState(() => isLoading = true);
 
     try {
+      //#################################################################################
+      // ############## new editing here #######################
+      String orderType = 'sale';
+      String? rentalStartDate;
+      String? rentalEndDate;
+      int? productId;
+      int quantity = 1;
+      if (widget.isRentalMode && widget.rentalItem != null) {
+        orderType = 'rental';
+        rentalStartDate = widget.rentalItem!.startDate;
+        rentalEndDate = widget.rentalItem!.endDate;
+        productId = widget.rentalItem!.productId;
+        quantity = widget.rentalItem!.quantity;
+      }
+
+    // ✅ لو كان إيجار، نتعامل مع منتج واحد فقط
+    if (widget.isRentalMode && widget.rentalItem != null) {
+      final response = selectedPayment == 'cod'
+          ? await PaymentService.placeCashOrder(
+              orderType: orderType,
+              productId: productId.toString(),
+              quantity: quantity,
+              rentalStartDate: rentalStartDate,
+              rentalEndDate: rentalEndDate,
+            )
+          : await PaymentService.placeOnlineOrder(
+              orderType: orderType,
+              productId: productId.toString(),
+              quantity: quantity,
+              rentalStartDate: rentalStartDate,
+              rentalEndDate: rentalEndDate,
+            );
+
+      if (!mounted) return;
+
+      if (response['success'] == true) {
+        // ✅ نجاح الطلب
+        final link = response['redirectTo'];
+        final invoice = response['invoice'];
+        final message = response['status'] ?? 'Order placed successfully';
+
+        if (selectedPayment == 'online' && link != null && link.isNotEmpty) {
+          await _launchURL(link);
+          _showSuccessDialog(
+            message: message,
+            invoice: invoice,
+            paymentLink: link,
+          );
+        } else {
+          _showSuccessDialog(
+            message: message,
+            invoice: invoice,
+            paymentLink: selectedPayment == 'online' ? link : null,
+          );
+        }
+      } else {
+        _showErrorDialog(
+          response['status'] ?? response['error'] ?? 'Failed to place order',
+        );
+      }
+//###########################################################################################
+      }else{
       // ✅ معالجة كل منتج في السلة
-      for (var item in cartItemsGlobal) {
+      for (var item in orderItems) {
         final response = selectedPayment == 'cod'
             ? await PaymentService.placeCashOrder(
                 orderType: orderType,
                 productId: item.id.toString(),
                 quantity: item.quantity,
-                rentalStartDate:
-                    orderType == 'rental' ? rentalStartDate : null,
+                rentalStartDate: orderType == 'rental' ? rentalStartDate : null,
                 rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
               )
             : await PaymentService.placeOnlineOrder(
                 orderType: orderType,
                 productId: item.id.toString(),
                 quantity: item.quantity,
-                rentalStartDate:
-                    orderType == 'rental' ? rentalStartDate : null,
+                rentalStartDate: orderType == 'rental' ? rentalStartDate : null,
                 rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
               );
 
@@ -371,7 +452,8 @@ double total = subtotal + insurance + delivery ;
 
         if (response['success'] == true) {
           // ✅ نجح الطلب
-          final link = response['redirectTo']; // 🔗 الحصول على الرابط من الاستجابة
+          final link =
+              response['redirectTo']; // 🔗 الحصول على الرابط من الاستجابة
           final invoice = response['invoice'];
           final message = response['status'] ?? 'Order placed successfully';
 
@@ -398,7 +480,8 @@ double total = subtotal + insurance + delivery ;
           return; // توقف عند أول خطأ
         }
       }
-    } catch (e) {
+    } 
+    }catch (e) {
       print('❌ Exception: $e');
       if (mounted) {
         _showErrorDialog('An unexpected error occurred: $e');
@@ -414,10 +497,7 @@ double total = subtotal + insurance + delivery ;
   Future<void> _launchURL(String url) async {
     try {
       if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(
-          Uri.parse(url),
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
         // بعد ما ينهي الدفع ويرجع، ندير عملية نظيفة
         print('✅ Payment link opened');
       } else {
@@ -466,10 +546,7 @@ double total = subtotal + insurance + delivery ;
               const SizedBox(height: 12),
               SelectableText(
                 paymentLink,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF0D6EFD),
-                ),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF0D6EFD)),
               ),
               const SizedBox(height: 8),
               TextButton(

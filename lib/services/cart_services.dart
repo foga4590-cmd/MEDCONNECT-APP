@@ -57,9 +57,10 @@ class CartService {
         if (token != null) 'Authorization': 'Bearer $token',
       },
     );
-
+    print('Reponse Cart body: ${response.body}');
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+      print('data: $data');
       print('message: ${data['message']}');
       return data['data'];
        // ده اللي فيه المنتجات
