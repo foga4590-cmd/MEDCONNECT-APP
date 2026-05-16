@@ -269,12 +269,19 @@ class CheckoutSummaryPage extends StatelessWidget {
           backgroundColor: const Color(0xFF0D6EFD),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => CheckoutPaymentPage()),
-          );
-        },
+      onPressed: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => CheckoutPaymentPage(
+        cartItems: cartItems,
+        subtotal: subtotal,
+        total: total,
+        selectedAddress: selectedAddress,
+      ),
+    ),
+  );
+},
         child: const Text(
           'Continue To Payment',
           style: TextStyle(

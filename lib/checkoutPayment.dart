@@ -1,29 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/services/payment_services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:medconnect_app/doctorAccount.dart';
-
+import 'package:medconnect_app/cartScreen.dart'; // أضف هذا للاستيراد
 
 class CheckoutPaymentPage extends StatefulWidget {
+  final List<CartItem> cartItems; // ✅ أضف هذا
+  final double subtotal; // ✅ أضف هذا
+  final double total; // ✅ أضف هذا
+  final Map<String, String> selectedAddress; // ✅ أضف هذا
 
-   const CheckoutPaymentPage({super.key});
+  const CheckoutPaymentPage({
+    super.key,
+    required this.cartItems, // ✅ required
+    required this.subtotal, // ✅ required
+    required this.total, // ✅ required
+    required this.selectedAddress, // ✅ required
+  });
 
   @override
   State<CheckoutPaymentPage> createState() => _CheckoutPaymentPageState();
 }
+
 class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
-  String selectedPayment =
-      "cod"; // cod = Cash on Delivery, online = Online Payment
-  
+  String selectedPayment = "cod";
   bool isLoading = false;
   
-  // بيانات الحجز (Rental)
   String? selectedProductId;
   String? rentalStartDate;
   String? rentalEndDate;
   String orderType = "sale";
-   // sale أو rental
 
   @override
   Widget build(BuildContext context) {
@@ -49,24 +55,10 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
                   children: [
                     _buildStepper(),
                     const SizedBox(height: 24),
-
-                   
-                    /// ===== Payment Options =====
-                    
                     _buildPaymentOptions(),
-
-               const SizedBox(height: 24),
-
-                    /// ===== Discount Code =====
-               
-
-
-                    /// ===== Order Summary =====///
-                 
-                    _buildOrderSummary(),
-
-               const SizedBox(height: 24),
-                      
+                    const SizedBox(height: 24),
+                    _buildOrderSummary(), // ✅ الآن تستخدم widget.cartItems
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
@@ -75,7 +67,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
             _buildPlaceOrderButton(),
           ],
         ),
-      ),     
+      ),
     );
   }
 
@@ -113,8 +105,8 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       ),
     );
   }
-// ================= Payment Options =================
 
+  // ================= Payment Options =================
   Widget _buildPaymentOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,7 +116,6 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         const SizedBox(height: 12),
-
         GestureDetector(
           onTap: () {
             setState(() {
@@ -137,9 +128,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
             selected: selectedPayment == "cod",
           ),
         ),
-
         const SizedBox(height: 12),
-
         GestureDetector(
           onTap: () {
             setState(() {
@@ -193,20 +182,19 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       ),
     );
   }
-  
 
   // ================= Order Summary =================
-
   Widget _buildOrderSummary() {
-    double subtotal = cartItemsGlobal.fold(
+    // ✅ استخدم widget.cartItems بدلاً من cartItemsGlobal
+    double subtotal = widget.cartItems.fold(
       0,
       (sum, item) => sum + (item.price * item.quantity),
     );
 
     double insurance = 50;
     double delivery = 25;
-    
-double total = subtotal + insurance + delivery ;
+    double total = subtotal + insurance + delivery;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
@@ -214,7 +202,7 @@ double total = subtotal + insurance + delivery ;
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ====== عرض المنتجات ديناميكياً ======
-          ...cartItemsGlobal.map((item) {
+          ...widget.cartItems.map((item) {
             return Column(
               children: [
                 Row(
@@ -269,6 +257,23 @@ double total = subtotal + insurance + delivery ;
           _priceRow('Delivery', '\$${delivery.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
           _priceRow('Total', '\$${total.toStringAsFixed(2)}', isTotal: true),
+          
+          // ✅ عرض عنوان التوصيل
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  widget.selectedAddress['address'] ?? 'No address',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -300,8 +305,6 @@ double total = subtotal + insurance + delivery ;
       ),
     );
   }
-
-  
 
   // ================= Button =================
   Widget _buildPlaceOrderButton() {
@@ -337,9 +340,8 @@ double total = subtotal + insurance + delivery ;
 
   /// ✅ دالة التعامل مع طلب الدفع
   Future<void> _handlePlaceOrder() async {
-   
     // ✅ التحقق من وجود منتجات
-    if (cartItemsGlobal.isEmpty) {
+    if (widget.cartItems.isEmpty) {
       _showErrorDialog('Your cart is empty');
       return;
     }
@@ -348,30 +350,27 @@ double total = subtotal + insurance + delivery ;
 
     try {
       // ✅ معالجة كل منتج في السلة
-      for (var item in cartItemsGlobal) {
+      for (var item in widget.cartItems) {
         final response = selectedPayment == 'cod'
             ? await PaymentService.placeCashOrder(
                 orderType: orderType,
-                productId: item.id.toString(),
+                productId: item.productId.toString(),
                 quantity: item.quantity,
-                rentalStartDate:
-                    orderType == 'rental' ? rentalStartDate : null,
+                rentalStartDate: orderType == 'rental' ? rentalStartDate : null,
                 rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
               )
             : await PaymentService.placeOnlineOrder(
                 orderType: orderType,
-                productId: item.id.toString(),
+                productId: item.productId.toString(),
                 quantity: item.quantity,
-                rentalStartDate:
-                    orderType == 'rental' ? rentalStartDate : null,
+                rentalStartDate: orderType == 'rental' ? rentalStartDate : null,
                 rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
               );
 
         if (!mounted) return;
 
         if (response['success'] == true) {
-          // ✅ نجح الطلب
-          final link = response['redirectTo']; // 🔗 الحصول على الرابط من الاستجابة
+          final link = response['redirectTo'];
           final invoice = response['invoice'];
           final message = response['status'] ?? 'Order placed successfully';
 
@@ -391,11 +390,10 @@ double total = subtotal + insurance + delivery ;
             );
           }
         } else {
-          // ❌ فشل الطلب
           _showErrorDialog(
             response['status'] ?? response['error'] ?? 'Failed to place order',
           );
-          return; // توقف عند أول خطأ
+          return;
         }
       }
     } catch (e) {
@@ -418,7 +416,6 @@ double total = subtotal + insurance + delivery ;
           Uri.parse(url),
           mode: LaunchMode.externalApplication,
         );
-        // بعد ما ينهي الدفع ويرجع، ندير عملية نظيفة
         print('✅ Payment link opened');
       } else {
         print('❌ Could not launch URL: $url');
@@ -485,8 +482,7 @@ double total = subtotal + insurance + delivery ;
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context); // أغلق النافذة
-              // 🚀 اذهب إلى Doctor Account بدلاً من الرجوع للـ checkout
+              Navigator.pop(context);
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (_) => doctorAccountPage()),

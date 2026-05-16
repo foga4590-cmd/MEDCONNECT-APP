@@ -4,11 +4,11 @@ import 'package:medconnect_app/checkoutSummary.dart';
 import 'package:medconnect_app/services/Get_Doctor_Profile.dart';
 
 class CheckoutAddressPage extends StatefulWidget {
-   final List<CartItem> cartItems;
+  final List<CartItem> cartItems;
 
-
-  const CheckoutAddressPage({super.key
-  , required this.cartItems,
+  const CheckoutAddressPage({
+    super.key,
+    required this.cartItems,
   });
 
   @override
@@ -16,23 +16,75 @@ class CheckoutAddressPage extends StatefulWidget {
 }
 
 class _CheckoutAddressPageState extends State<CheckoutAddressPage> {
-  int selectedAddress = 0;
+  // متغيرات العنوان
+  String address = '';
+  String governorate = '';
+  bool isLoading = true;
+  bool isUpdating = false;
 
-  final List<Map<String, String>> addresses = [
-    {
-      "title": "General Hospital",
-      "address": "123 Health St, MedCity, 10001",
-      "icon": "hospital",
-    },
-    {
-      "title": "Downtown Clinic",
-      "address": "456 Wellness Ave, MedCity, 10002",
-      "icon": "location",
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    loadAddress();
+  }
 
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController addressController = TextEditingController();
+  // جلب العنوان من الـ API
+  Future<void> loadAddress() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    final result = await GetDoctorProfile.doctorProfile();
+
+    if (result['success']) {
+      final data = result['data'];
+      setState(() {
+        address = data['address'] ?? '';
+        governorate = data['governorate'] ?? '';
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? 'Failed to load address'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // تحديث العنوان
+ // تحديث العنوان - ترجع true إذا نجحت، false إذا فشلت
+// تحديث العنوان - ترجع Map تحتوي على success والرسالة
+Future<Map<String, dynamic>> updateAddress(String newAddress) async {
+  setState(() {
+    isUpdating = true;
+  });
+
+  final result = await GetDoctorProfile.updateAddress(newAddress);
+
+  setState(() {
+    isUpdating = false;
+  });
+
+  if (result['success']) {
+    setState(() {
+      address = newAddress;
+    });
+    return {
+      'success': true,
+      'message': result['message'] ?? 'Address updated successfully',
+    };
+  } else {
+    return {
+      'success': false,
+      'message': result['message'] ?? 'Failed to update address',
+    };
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -53,74 +105,90 @@ class _CheckoutAddressPageState extends State<CheckoutAddressPage> {
         title: const Text("Checkout", style: TextStyle(color: Colors.black)),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStepper(),
-            const SizedBox(height: 24),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStepper(),
+                  const SizedBox(height: 24),
 
-            const Text(
-              "Delivery Information",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  const Text(
+                    "Delivery Information",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // عرض العنوان الوحيد
+                  _buildAddressCard(),
+
+                  const Spacer(),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0A4C8B),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        if (address.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Please add your address first"),
+                              backgroundColor: Colors.orange,
+                            ),
+                          );
+                          return;
+                        }
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CheckoutSummaryPage(
+                              cartItems: widget.cartItems,
+                              subtotal: widget.cartItems.fold(
+                                0.0,
+                                (sum, item) => sum + (item.price * item.quantity),
+                              ),
+                              taxes: 0.0,
+                              total: 0.0,
+                              selectedAddress: {
+                                "title": "Delivery Address",
+                                "address": address,
+                                "icon": "location",
+                              },
+                            ),
+                          ),
+                        );
+                      },
+                      child: isUpdating
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              "Continue To Summary",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-
-            /// ADDRESSES LIST
-            for (int i = 0; i < addresses.length; i++) ...[
-              _buildAddressCard(
-                index: i,
-                title: addresses[i]['title']!,
-                address: addresses[i]['address']!,
-                icon: addresses[i]['icon'] == "hospital"
-                    ? Icons.local_hospital
-                    : Icons.location_on,
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            _buildAddAddress(),
-
-            const Spacer(),
-
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0A4C8B),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CheckoutSummaryPage(
-                        cartItems: widget.cartItems,
-                        subtotal: widget.cartItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
-                        taxes: 0.0,
-                        total: 0.0,
-                        selectedAddress: addresses[selectedAddress],
-                     ),
-                    )
-                  );
-                },
-                child: const Text(
-                  "Continue To Summary",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            )
-          ],
-        ),
-      ),
     );
   }
 
@@ -166,165 +234,166 @@ class _CheckoutAddressPageState extends State<CheckoutAddressPage> {
     return const SizedBox(width: 8);
   }
 
-  // ---------------- ADDRESS CARD ----------------
+  // ---------------- ADDRESS CARD (Single) ----------------
 
-  Widget _buildAddressCard({
-    required int index,
-    required String title,
-    required String address,
-    required IconData icon,
-  }) {
-    bool isSelected = selectedAddress == index;
-
-    return InkWell(
-      onTap: () => setState(() => selectedAddress = index),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isSelected ? const Color(0xFF0A4C8B) : Colors.grey.shade300,
-            width: 1.5,
+  Widget _buildAddressCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: address.isNotEmpty ? const Color(0xFF0A4C8B) : Colors.grey.shade300,
+          width: 1.5,
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.location_on, color: Color(0xFF0A4C8B)),
           ),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: const Color(0xFF0A4C8B)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Delivery Address",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  address.isEmpty ? "No address added yet" : address,
+                  style: TextStyle(
+                    color: address.isEmpty ? Colors.grey.shade500 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 4),
-                  Text(address,
-                      style: TextStyle(color: Colors.grey.shade600)),
-                ],
-              ),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.edit,
+              color: const Color(0xFF0A4C8B),
+              size: 20,
             ),
-            Checkbox(
-              value: isSelected,
-              onChanged: (_) => setState(() => selectedAddress = index),
-              activeColor: const Color(0xFF0A4C8B),
-            )
-          ],
-        ),
+            onPressed: () => _showEditAddressDialog(),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
       ),
     );
   }
 
-  // ---------------- ADD ADDRESS ----------------
+  // ---------------- EDIT ADDRESS DIALOG ----------------
 
-  Widget _buildAddAddress() {
-    return InkWell(
-      onTap: _showAddAddressDialog,
-      child: Container(
-        width: double.infinity,
-        height: 60,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Center(
-          child: Text(
-            "+ Add New Address",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ),
-      ),
-    );
-  }
+  void _showEditAddressDialog() {
+    final TextEditingController controller = TextEditingController(text: address);
 
-  // ---------------- ADD ADDRESS DIALOG ----------------
-
-  void _showAddAddressDialog() {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Add New Address"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: "Place Name",
-              ),
-            ),
-            TextField(
-              controller: addressController,
-              decoration: const InputDecoration(
-                labelText: "Address",
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
           ),
-          ElevatedButton(
-           onPressed: () async {
-  if (titleController.text.isEmpty || addressController.text.isEmpty) {
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Edit Delivery Address',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Enter your delivery address',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF0A4C8B), width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                  onPressed: () async {
+  final newAddress = controller.text.trim();
+  if (newAddress.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Please enter an address"),
+        backgroundColor: Colors.orange,
+      ),
+    );
     return;
   }
 
-  final newAddress = addressController.text;
+  setState(() {
+    isUpdating = true;
+  });
 
-  // ⏳ Loading
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => const Center(child: CircularProgressIndicator()),
-  );
+  final result = await updateAddress(newAddress); // result هي Map
 
-  final result = await GetDoctorProfile.updateAddress(newAddress);
-
-  Navigator.pop(context); // يقفل الـ loading
+  setState(() {
+    isUpdating = false;
+  });
 
   if (result['success']) {
-    setState(() {
-      addresses.add({
-        "title": titleController.text,
-        "address": addressController.text,
-        "icon": "location",
-      });
-      selectedAddress = addresses.length - 1;
-    });
-
-    titleController.clear();
-    addressController.clear();
-
-    Navigator.pop(context); // يقفل الديالوج
-
+    Navigator.pop(context); // إغلاق الديالوج
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(result['message']),
+        content: Text(result['message']), // ✅ رسالة من الـ API
         backgroundColor: Colors.green,
       ),
     );
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(result['message']),
+        content: Text(result['message']), // ✅ رسالة من الـ API
         backgroundColor: Colors.red,
       ),
     );
   }
 },
-            child: const Text("Add"),
+                    
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0A4C8B),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

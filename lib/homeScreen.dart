@@ -10,7 +10,7 @@ import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/services/search_services.dart';
 import 'package:provider/provider.dart';
 import '../models/Search_model.dart';
-import '../services/cart_services.dart';
+import 'package:medconnect_app/services/cart_services.dart';
 
 // ---------------------
 // GLOBAL LISTS
@@ -41,7 +41,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isSearching = false;
   int? selectedCategoryId;
   bool showCategories = false;
-  final CartService _cartService = CartService();
   // دي جاية من API بتاعتك
   List<CategoryApiModel> categoriesApi = [];
   bool isLoadingCategoriesApi = false;
@@ -66,6 +65,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _productsError;
 
   final ApiService _apiService = ApiService();
+    final CartService _cartService = CartService();
+
   final ScrollController _scrollController = ScrollController();
    //#################################
   @override
@@ -933,28 +934,38 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
               backgroundColor: Colors.blue,
               padding: EdgeInsets.symmetric(vertical: 14),
             ),
-            onPressed: () async { 
-               //there is change by mohamed
-               try{
-              final result = await _apiService.addToCart(
+             onPressed: () async {  //there is change by mohamed
+              final result = await _cartService.addToCart(
                 productId: p.id,
                 quantity: 1,
                 type: "sale",
               );
 
-              if (result['success'] == true) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("${p.name} added to cart (Buy)")),
-              );
-            } else {
-              throw Exception(result['error']);
-            }
-          } catch (e) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
-            );
-          }
-        },
+              if (result['success'] != false) {
+                // ✅ ضيفه local برضو لو عايز
+                cartItemsGlobal.add(
+                  CartItem(
+                    daily_rent: 0,
+                    name: p.name,
+                    image: p.imagePath,
+                    quantity: 1,
+                    price: p.price,
+                    type: 'sale',
+                    dateRange: '',
+                    id: p.id,
+                    productId: p.id,
+                  ),
+                );
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("${p.name} added to cart ✅")),
+                );
+              } else { //there is change by mohamed
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(result['message'] ?? "Error")),
+                );
+              }
+            },
             child: const Text(
               "Add To Cart",
               style: TextStyle(

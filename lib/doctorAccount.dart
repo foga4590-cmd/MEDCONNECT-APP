@@ -6,6 +6,9 @@ import 'package:medconnect_app/massegesScreen.dart';
 import 'package:medconnect_app/myCustomRequests.dart';
 import 'package:medconnect_app/core/app_colorDoctor.dart';
 import 'package:medconnect_app/doctorProfile.dart';
+import 'package:medconnect_app/models/order_model.dart';
+import 'package:medconnect_app/order_details.dart';
+import 'package:medconnect_app/services/order_services.dart';
 //import 'package:medconnect_app/Screens/homeScreen.dart';
 
  
@@ -15,7 +18,7 @@ import 'package:medconnect_app/doctorProfile.dart';
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Inter',
-        scaffoldBackgroundColor: AppColors.bgLight,
+        scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
       ),
       home:  doctorAccountPage(),
@@ -232,10 +235,12 @@ class RecentOrdersSection extends StatelessWidget {
                 elevation: 0,
               ),
               onPressed: () {
-                // TODO: Navigate to All Orders Screen
-                // Navigator.push(context, MaterialPageRoute(
-                //   builder: (_) => const AllOrdersScreen(),
-                // ));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AllOrdersScreen(),
+                  ),
+                );
               },
               child: const Text(
                 "View All Orders",
@@ -273,6 +278,197 @@ class OrderRow extends StatelessWidget {
           Text(status, style: TextStyle(color: statusColor)),
         ],
       ),
+    );
+  }
+}
+
+class AllOrdersScreen extends StatefulWidget {
+  const AllOrdersScreen({super.key});
+
+  @override
+  State<AllOrdersScreen> createState() => _AllOrdersScreenState();
+}
+
+class _AllOrdersScreenState extends State<AllOrdersScreen> {
+  List<Order> _orders = [];
+  int _currentPage = 1;
+  int _lastPage = 1;
+  bool _isLoading = false;
+  bool _hasLoadedOnce = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+  Future<void> _refreshOrders() async {
+  setState(() {
+    _orders = [];
+    _currentPage = 1;
+    _lastPage = 1;
+    _hasLoadedOnce = false;
+  });
+  await _loadOrders();
+}
+
+  Future<void> _loadOrders() async {
+    final result = await OrderServices.fetchDoctorOrders(
+      page: _currentPage,
+      perPage: 5,
+    );
+
+    setState(() {
+      _orders.addAll(result['orders'] as List<Order>);
+      _lastPage = result['lastPage'] ?? 1;
+      _hasLoadedOnce = true;
+    });
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoading || _currentPage >= _lastPage) return;
+
+    setState(() {
+      _isLoading = true;
+      _currentPage++;
+    });
+
+    final result = await OrderServices.fetchDoctorOrders(
+      page: _currentPage,
+      perPage: 5,
+    );
+
+    setState(() {
+      _orders.addAll(result['orders'] as List<Order>);
+      _isLoading = false;
+    });
+  }
+
+  String _formatDate(DateTime? date) {
+    return '${date?.year.toString().padLeft(4, '0')}-${date?.month.toString().padLeft(2, '0')}-${date?.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'All Orders',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: AppColors.primary,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+
+      body: _orders.isEmpty && !_hasLoadedOnce
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: _orders.length + 1,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                
+                // 🔥 زرار View More في آخر العنصر
+                if (index == _orders.length) {
+                  if (_currentPage >= _lastPage) {
+                    return const SizedBox();
+                  }
+
+                  return Center(
+                    child: TextButton(
+                      onPressed: _isLoading ? null : _loadMore,
+                      child: _isLoading
+                          ? const CircularProgressIndicator()
+                          : const Text('View More'),
+                    ),
+                  );
+                }
+
+                final order = _orders[index];
+
+               final productNames = order.items.isNotEmpty
+    ? order.items.map((item) => item.name).join(', ')
+    : 'No item details';
+
+                return GestureDetector(
+                 // في دالة onTap الخاصة ب item
+onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => OrderDetailsPage(orderId: order.id),
+    ),
+  ).then((_) {
+    // ✅ عند العودة، أعد تحميل البيانات
+    _refreshOrders();
+  });
+},
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 8)
+                      ],
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              order.invoiceNumber.isNotEmpty
+                                  ? order.invoiceNumber
+                                  : 'Order #${order.id}',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            Text(
+                              order.status,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: order.status.toLowerCase() == 'confirmed'
+                                    ? Colors.green
+                                    : order.status.toLowerCase() == 'cancelled' ||
+                                            order.status.toLowerCase() == 'canceled'
+                                        ? Colors.red
+                                        : Colors.orange,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Total: ${order.total.toStringAsFixed(2)}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Type: ${order.orderType}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 4),
+                      Text(
+  'Name: $productNames',
+  style: const TextStyle(fontSize: 14),
+),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Date: ${_formatDate(order.createdAt)}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Items: ${order.items.length}',
+                          style: const TextStyle(color: Colors.blue),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CartService {
+
   static const String baseUrl =
       'https://medconnect-one-pi.vercel.app/api/api';
 
-  Future<Map<String, dynamic>> addToCart({
+    Future<Map<String, dynamic>> addToCart({
     required int productId,
     int quantity = 1,
     String type = "sale",
@@ -19,6 +20,7 @@ class CartService {
     final response = await http.post(
       url,
       headers: {
+         'Accept': 'application/json',
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       },
@@ -45,40 +47,54 @@ class CartService {
     }
   }
   
-  Future<List<dynamic>> getCartItems()
+   Future<List<dynamic>> getCartItems()
     
   async {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
+      print("TOKEN => $token");
     final response = await http.get(
       Uri.parse('$baseUrl/v1/cart/show'),
       headers: {
+         'Accept': 'application/json',
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       },
     );
 
     if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      print('message: ${data['message']}');
-      return data['data'];
-       // ده اللي فيه المنتجات
+    final responseData = jsonDecode(response.body);
+    
+    // تخزين الرسالة في متغير
+    _lastMessage = responseData['message'] ?? 'Cart loaded';
+    
+    // لو الـ response فيه 'data' استخدمه، وإلا استخدم الـ response نفسه
+    if (responseData is Map && responseData.containsKey('data')) {
+      return responseData['data'];
+    } else if (responseData is List) {
+      return responseData;
     } else {
+      return [];
+    }
+  } else {
       throw Exception('message: ${response.body}');
     }
+    
   }
+  
+
   Future<Map<String, dynamic>> updateCart({
   required int cartId,
   required int quantity,
-  String? token,
 }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('auth_token');
   final url = Uri.parse('$baseUrl/v1/cart/update/$cartId');
 
   final response = await http.post(
     url,
     headers: {
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     },
@@ -87,33 +103,54 @@ class CartService {
     }),
   );
 
-  if (response.statusCode == 200) {
-    return jsonDecode(response.body);
+  print('Update response status: ${response.statusCode}');
+  print('Update response body: ${response.body}');
+
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    final data = jsonDecode(response.body);
+    
+    // ✅ تأكد من إرجاع Map فيها message
+    return {
+      'success': true,
+      'message': data['message'] ?? 'Quantity updated successfully',
+      'data': data,
+    };
   } else {
-    throw Exception('message: ${response.body}');
+    throw Exception('Failed to update cart: ${response.body}');
   }
 }
-Future<void> deleteCartItem({
+
+String _lastMessage = '';
+String get lastMessage => _lastMessage;
+
+Future<Map<String, dynamic>> deleteCartItem({
   required int cartId,
-  String? token,
 }) async {
   final prefs = await SharedPreferences.getInstance();
   final savedToken = prefs.getString('auth_token');
-
+  
   final response = await http.delete(
     Uri.parse('$baseUrl/v1/cart/delete/$cartId'),
     headers: {
+      'Accept': 'application/json',
       'Content-Type': 'application/json',
       if (savedToken != null) 'Authorization': 'Bearer $savedToken',
     },
   );
 
   final data = jsonDecode(response.body);
+  print('=== DELETE RESPONSE ===');
+  print('Status code: ${response.statusCode}');
+  print('Response body: ${response.body}');
+  print('=======================');
 
   if (response.statusCode == 200) {
-    print('Deleted successfully: ${data['message']}');
+    return {
+      'success': true,
+      'message': data['message'] ?? 'Item deleted successfully',
+    };
   } else {
-    throw Exception('Delete failed: ${data['message']}');
+    throw Exception(data['message'] ?? 'Delete failed');
   }
 }
 }
