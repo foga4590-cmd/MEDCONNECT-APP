@@ -25,6 +25,11 @@ static int? _doctorId;
 static String? get doctorName => _doctorName;
 static String? _doctorName;
   static String? _token;
+
+  static void setDoctorData(Map<String, dynamic> userData) {
+  _doctorId = userData['id'];
+  _doctorName = userData['fullname'];
+}
 //static Map<String, dynamic>? _cachedSupplierData;
   Future<Map<String, dynamic>> login({
     required String email,
@@ -88,6 +93,7 @@ static String? _doctorName;
       var data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
+        setDoctorData(data['data']);
         print('✅ Login success - status 200');
         print('📦 Data: ${data['data']}');
        
@@ -95,13 +101,14 @@ static String? _doctorName;
 
         // تخزين التوكن
         if (data['data'] != null && data['token'] != null) {
+          
           print('💾 Found token: ${data['token']}');
           await _saveToken(data['token']);
           await _saveUserData(data['data']);
 
 
-           _doctorId = data['data']['id'];
-           _doctorName = data['data']['fullname'];
+          //  _doctorId = data['data']['id'];
+          //  _doctorName = data['data']['fullname'];
 
 
            
@@ -750,6 +757,7 @@ Future<Map<String, dynamic>> requestRestockNotification(int productId) async {
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $_token',
+          'Content-Type': 'application/json',
       },
     );
 
@@ -776,6 +784,7 @@ Future<Map<String, dynamic>> undoRestockNotification(int productId) async {
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $_token',
+          'Content-Type': 'application/json',
       },
     );
 
@@ -792,6 +801,31 @@ Future<Map<String, dynamic>> undoRestockNotification(int productId) async {
     throw 'Error: $e';
   }
 }
+Future<bool> isNotified(int productId) async {
+  try {
+    if (_token == null) return false;
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/v1/restock-notification/is-notify/$productId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+      },
+    );
+
+    print('📦 Is Notified Response (${response.statusCode}): ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['isNotified'] == true;
+    }
+    return false;
+  } catch (e) {
+    print('❌ Error checking notification: $e');
+    return false;
+  }
+}
+
 
 // ------------------- Cart -------------------
 Future<Map<String, dynamic>> addToCart({
@@ -874,6 +908,7 @@ Future<List<Review>> getProductReviews(int productId) async {
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $_token',
+
       },
     );
 
@@ -1000,33 +1035,68 @@ Map<String, String> _authHeaders() {
   return {
     'Accept': 'application/json',
     'Authorization': 'Bearer $_token',
+    'Content-type': 'application/json'
   };
 }
-
 Future<bool> validateRent({
   required int productId,
   required int quantity,
   required String startDate,
   required String endDate,
 }) async {
-  final response = await http.post(
-    Uri.parse('$baseUrl/v1/validateRent/$productId'),
-    headers: _authHeaders(),
-    body: jsonEncode({
-      'quantity': quantity,
-      'rental_start_date': startDate,
-      'rental_end_date': endDate,
-    }),
-  );
-print("rent details : response body : ${response.body}");
-  if (response.statusCode == 200) {
-    final data = jsonDecode(response.body);
-    return data['success'] == true;
-  } else {
-    final error = jsonDecode(response.body)['error'];
-    throw Exception(error);
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/v1/validateRent/$productId'),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $_token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'quantity': quantity,
+        'rental_start_date': startDate,   // لازم M/D/YYYY
+        'rental_end_date': endDate,       // لازم M/D/YYYY
+      }),
+    );
+
+    print('📦 Validate Rent Response (${response.statusCode}): ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['success'] == true || data['sccuess'] == "Rent is validated";
+    } else {
+      final data = jsonDecode(response.body);
+      throw Exception(data['error'] ?? 'Validation failed');
+    }
+  } catch (e) {
+    print('❌ Validate Rent Error: $e');
+    throw'Failed to validate rent: $e';
   }
 }
+// Future<bool> validateRent({
+//   required int productId,
+//   required int quantity,
+//   required String startDate,
+//   required String endDate,
+// }) async {
+//   final response = await http.post(
+//     Uri.parse('$baseUrl/v1/validateRent/$productId'),
+//     headers: _authHeaders(),
+//     body: jsonEncode({
+//       'quantity': quantity,
+//       'rental_start_date': startDate,
+//       'rental_end_date': endDate,
+//     }),
+//   );
+// print("rent details : response body : ${response.body}");
+//   if (response.statusCode == 200) {
+//     final data = jsonDecode(response.body);
+//     return data['success'] == true ;
+//   } else {
+//     final error = jsonDecode(response.body)['error'];
+//     throw Exception(error);
+//   } 
+// }
 //##################################
   Future<void> _saveToken(String token) async {
     print('💾 _saveToken called with: $token');

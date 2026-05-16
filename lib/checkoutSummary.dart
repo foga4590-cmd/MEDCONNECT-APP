@@ -19,7 +19,9 @@ class CheckoutSummaryPage extends StatelessWidget {
     required this.cartItems,
     required this.subtotal,
     required this.taxes,
-    required this.total, required this.isRentablMode, this.rentalItem,
+    required this.total,
+    this.isRentablMode = false, 
+    this.rentalItem,
   });
 
   @override
@@ -162,7 +164,23 @@ class CheckoutSummaryPage extends StatelessWidget {
   // ========== Order Summary ==========
 
   Widget _buildOrderSummary() {
-    double subtotal = cartItems.fold(
+
+     final items = isRentablMode && rentalItem != null
+      ? [
+          CartItem(
+            id: rentalItem!.productId,
+            productId: rentalItem!.productId,
+            name: rentalItem!.name,
+            image: rentalItem!.image,
+            quantity: rentalItem!.quantity,
+            price: rentalItem!.price,
+            type: 'rent',
+            daily_rent: rentalItem!.price / 30,
+          )
+        ]
+      : cartItems;
+
+    double subtotal = items.fold(
       0,
       (sum, item) => sum + (item.price * item.quantity),
     );
@@ -177,7 +195,7 @@ class CheckoutSummaryPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ====== عرض المنتجات ديناميكياً ======
-          ...cartItems.map((item) {
+          ...items.map((item) {
             return Column(
               children: [
                 Row(

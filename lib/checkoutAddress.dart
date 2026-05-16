@@ -60,7 +60,7 @@ List<CartItem> get cartItemsForCheckout {
       ),
     ];
   }
-  return cartItemsGlobal;
+  return widget.cartItems ?? cartItemsGlobal;
 }
 
 

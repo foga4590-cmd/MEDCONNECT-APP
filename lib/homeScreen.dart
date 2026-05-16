@@ -67,6 +67,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final ApiService _apiService = ApiService();
   final ScrollController _scrollController = ScrollController();
+
+  
+Map<int, bool> _notifyStatus = {};
+
+  
    //#################################
   @override
   void initState() {
@@ -132,6 +137,14 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoadingProducts = false;
         _isLoadingMore = false;
       });
+
+       for (var product in _allProducts) {
+    if (product.stock == 0 && product.restockDate != null) {
+      final isNotified = await _apiService.isNotified(product.id);
+      _notifyStatus[product.id] = isNotified;
+    }
+  }
+  setState(() {});
     } catch (e) {
       setState(() {
         _productsError = e.toString();
@@ -680,15 +693,22 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                 final result= await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) =>
                           ProductDetailsPage(productId: p.id,product: p),
                     ),
                   );
-                },
+                
+                  if (result == true && mounted) {
+    final isNotified = await _apiService.isNotified(p.id);
+    setState(() {
+      _notifyStatus[p.id] = isNotified;
+    });
+  }
+},
                 //#####################################################
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -764,14 +784,14 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
                     vertical: 2,
                   ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    // padding: const EdgeInsets.symmetric(
+                    //   horizontal: 8,
+                    //   vertical: 2,
+                    // ),
+                    // decoration: BoxDecoration(
+                    //   color: Colors.red.shade100,
+                    //   borderRadius: BorderRadius.circular(12),
+                    // ),
                     child: const Text(
                       "Out of Stock",
                       style: TextStyle(
@@ -868,6 +888,123 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
   // ---------------------
   // BUTTONS: Add / Rent / Notify Me
   // ---------------------
+  
+  // ... كل المتغيرات
+
+  Widget _buildNotifyButton(Product p) {
+    return FutureBuilder<bool>(
+      future: _apiService.isNotified(p.id),
+      builder: (context, snapshot) {
+        final isNotified = snapshot.data ?? false;
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isNotified ? const Color.fromARGB(255, 238, 235, 235) : Colors.amber,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+            onPressed: () async {
+              if (isNotified) {
+                await _apiService.undoRestockNotification(p.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notification cancelled')),
+                );
+              } else {
+                await _apiService.requestRestockNotification(p.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Notification requested!')),
+                );
+              }
+              setState(() {});
+            },
+            child: Text(
+              isNotified ? "Undo" : "Notify Me",
+              style: TextStyle(
+                color: isNotified ? Colors.red : Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
+  // Widget _buildNotifyButton(Product p) {
+    
+  //    final isNotified = _notifyStatus[p.id] ?? false;
+
+  // return SizedBox(
+  //    width: double.infinity,
+  //   child: ElevatedButton(
+  //     style: ElevatedButton.styleFrom(
+  //       backgroundColor: isNotified ? const Color.fromARGB(255, 240, 234, 235) : Colors.amber,
+  //     ),
+  //     onPressed: () async {
+  //       if (isNotified) {
+  //         // ✅ المنتج في الـ list → ندوس Undo → نطلبه undo من API
+  //         await _apiService.undoRestockNotification(p.id);
+  //         setState(() => _notifyStatus[p.id] = false);
+  //         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Notification cancelled')));
+  //       } else {
+  //         // ✅ المنتج مش في الـ list → نطلب Notify Me
+  //         await _apiService.requestRestockNotification(p.id);
+  //         setState(() => _notifyStatus[p.id] = true);
+  //         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Notification requested!')));
+  //       }
+  //     },
+  //     child: Text(isNotified ? "Undo" : "Notify Me"),
+  //   ),
+  // );
+  // final isNotified = _notifyStatus[p.id] ?? false;
+
+  // return SizedBox(
+  //   width: double.infinity,
+  //   child: ElevatedButton(
+  //     style: ElevatedButton.styleFrom(
+  //       backgroundColor: isNotified ? Colors.red.shade100 : Colors.amber,
+  //       padding: const EdgeInsets.symmetric(vertical: 14),
+  //     ),
+  //     onPressed: () async {
+  //       if (isNotified) {
+  //         final confirm = await showDialog<bool>(
+  //           context: context,
+  //           builder: (ctx) => AlertDialog(
+  //             title: const Text('Cancel Notification'),
+  //             content: const Text('Are you sure you want to cancel this notification?'),
+  //             actions: [
+  //               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+  //               TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes', style: TextStyle(color: Colors.red))),
+  //             ],
+  //           ),
+  //         );
+  //         if (confirm != true) return;
+
+  //         try {
+  //           await _apiService.undoRestockNotification(p.id);
+  //           setState(() => _notifyStatus[p.id] = false);
+  //           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification cancelled')));
+  //         } catch (e) {
+  //           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))));
+  //         }
+  //       } else {
+  //         try {
+  //           await _apiService.requestRestockNotification(p.id);
+  //           setState(() => _notifyStatus[p.id] = true);
+  //           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification requested!')));
+  //         } catch (e) {
+  //           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))));
+  //         }
+  //       }
+  //     },
+  //     child: Text(
+  //       isNotified ? "Undo" : "Notify Me",
+  //       style: TextStyle(color: isNotified ? Colors.red : Colors.black, fontWeight: FontWeight.bold),
+  //     ),
+  //   ),
+  // );
+//}
   Widget _buildActionButton(Product p) {
     // ✅ حالة 1: Out of Stock (stock == 0) و restock_date == null
     if (p.stock == 0 && p.restockDate == null) {
@@ -890,35 +1027,36 @@ final isInWishlist = wishlistProvider.isInWishlist(p.id);
 
     // ✅ حالة 2: Notify Me (stock == 0 و restock_date != null)
     if (p.stock == 0 && p.restockDate != null) {
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.amber,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-          onPressed:  () async {
-        try {
-          final result = await _apiService.requestRestockNotification(p.id);
-          if (result['success'] == true) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Notification requested! We'll notify you when back in stock")),
-            );
-          } else {
-            throw Exception(result['error']);
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
-          );
-        }
-      },
-          child: const Text(
-            "Notify Me",
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          ),
-        ),
-      );
+      return _buildNotifyButton(p);
+      // return SizedBox(
+      //   width: double.infinity,
+      //   child: ElevatedButton(
+      //     style: ElevatedButton.styleFrom(
+      //       backgroundColor: Colors.amber,
+      //       padding: const EdgeInsets.symmetric(vertical: 14),
+      //     ),
+      //     onPressed:  () async {
+      //   try {
+      //     final result = await _apiService.requestRestockNotification(p.id);
+      //     if (result['success'] == true) {
+      //       ScaffoldMessenger.of(context).showSnackBar(
+      //         const SnackBar(content: Text("Notification requested! We'll notify you when back in stock")),
+      //       );
+      //     } else {
+      //       throw Exception(result['error']);
+      //     }
+      //   } catch (e) {
+      //     ScaffoldMessenger.of(context).showSnackBar(
+      //       SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))),
+      //     );
+      //   }
+      // },
+      //     child: const Text(
+      //       "Notify Me",
+      //       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+      //     ),
+      //   ),
+      // );
     }
 
     // ✅ حالة 3: منتج متاح (stock > 0)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/models/rental_item.dart';
 import 'package:medconnect_app/services/payment_services.dart';
@@ -31,7 +32,23 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   String? rentalEndDate;
   String orderType = "sale";
   // sale أو rental
-
+List<CartItem> get orderItems {
+  if (widget.isRentalMode && widget.rentalItem != null) {
+    return [
+      CartItem(
+        id: widget.rentalItem!.productId,
+        productId: widget.rentalItem!.productId,
+        name: widget.rentalItem!.name,
+        image: widget.rentalItem!.image,
+        quantity: widget.rentalItem!.quantity,
+        price: widget.rentalItem!.price,
+        type: 'rent',
+        daily_rent: widget.rentalItem!.price / 30,
+      ),
+    ];
+  }
+  return cartItemsGlobal; // ✅ الكارت العادي
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,6 +96,9 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
       ),
     );
   }
+
+
+
 
   // ================= Stepper =================
   Widget _buildStepper() {
@@ -198,7 +218,11 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   // ================= Order Summary =================
 
   Widget _buildOrderSummary() {
-    double subtotal = cartItemsGlobal.fold(
+
+      final items = orderItems;
+
+    
+    double subtotal = items.fold(
       0,
       (sum, item) => sum + (item.price * item.quantity),
     );
@@ -214,7 +238,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ====== عرض المنتجات ديناميكياً ======
-          ...cartItemsGlobal.map((item) {
+          ...items.map((item) {
             return Column(
               children: [
                 Row(
@@ -336,7 +360,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   /// ✅ دالة التعامل مع طلب الدفع
   Future<void> _handlePlaceOrder() async {
     // ✅ التحقق من وجود منتجات
-    if (cartItemsGlobal.isEmpty) {
+    if (cartItemsGlobal.isEmpty && !widget.isRentalMode) {
       _showErrorDialog('Your cart is empty');
       return;
     }
@@ -407,7 +431,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
 //###########################################################################################
       }else{
       // ✅ معالجة كل منتج في السلة
-      for (var item in cartItemsGlobal) {
+      for (var item in orderItems) {
         final response = selectedPayment == 'cod'
             ? await PaymentService.placeCashOrder(
                 orderType: orderType,

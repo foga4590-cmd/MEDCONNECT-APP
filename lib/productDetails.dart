@@ -30,6 +30,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   Product? _product;
   bool isLoading = true;
   String? _error;
+bool _isNotified = false;
 
 List<Review> get reviews => _product?.reviews ?? [];
   final ApiService _apiService = ApiService();
@@ -51,7 +52,7 @@ List<Review> get reviews => _product?.reviews ?? [];
         isLoading = false;
       });
     }
-
+  await _checkNotificationStatus();
     // // لو محتاجين نجيب من API
     // setState(() {
     //   _isLoading = true;
@@ -61,6 +62,24 @@ List<Review> get reviews => _product?.reviews ?? [];
     try {
       final freshproduct = await _apiService.fetchProductById(widget.productId);
       final reviews = await _apiService.getProductReviews(widget.productId);
+    reviews.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // الأحدث أولاً
+      final updatedReviews = reviews.map((r){
+        return Review(id: r.id,
+         doctorId: r.doctorId,
+          rating: r.rating,
+           comment: r.comment, 
+           createdAt: r.createdAt,
+            productId: r.productId,
+            doctorName: r.doctorName,
+            canDelete: r.doctorId==ApiService.doctorId,
+            
+            
+            );
+        
+
+
+      }).toList();
+
       setState(() {
         _product = freshproduct;
         _product = Product(
@@ -80,10 +99,13 @@ List<Review> get reviews => _product?.reviews ?? [];
         warranty: freshproduct.warranty,
         setupDuration: freshproduct.setupDuration,
         supplierData: freshproduct.supplierData,
-        reviews: reviews, // ✅ من API منفصل
+        reviews: updatedReviews, // ✅ من API منفصل
       );
         isLoading = false;
       });
+
+ await _checkNotificationStatus();
+
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -92,6 +114,16 @@ List<Review> get reviews => _product?.reviews ?? [];
     }
   }
 
+// ✅ دالة منفصلة عشان نجيب isNotified
+Future<void> _checkNotificationStatus() async {
+  if (_product == null) return;
+  final isNotified = await _apiService.isNotified(_product!.id);
+  if (mounted) {
+    setState(() {
+      _isNotified = isNotified;
+    });
+  }
+}
   // -------- Rent --------
   DateTime? rentStartDate;
   DateTime? rentEndDate;
@@ -128,8 +160,18 @@ double get averageRating {
 
 Future<void> _rentNow() async {
   String formatDate(DateTime date) {
-    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+     return "${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}/${date.year}";
+
+    //return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
   }
+
+  print('sending rent validation');
+  print(' productId : ${_product!.id}');
+  print('quantity: $rentQuantity');
+  print("start date : ${formatDate(rentStartDate!)}");
+   print("end date : ${formatDate(rentEndDate!)}");
+
+  try{
 
   final isValid = await _apiService.validateRent(
     productId: _product!.id,
@@ -158,9 +200,25 @@ Future<void> _rentNow() async {
         ),
       ),
     );
-  } else {
+  } 
+  } catch(e){
+    // ✅ عرض رسالة الخطأ من الـ API
+    String errorMessage = e.toString().replaceAll('Exception:', '').trim();
+    
+    // لو الخطأ من الـ API نفسه (زي "not rentable" أو "Insufficient stock for rent")
+    if (errorMessage.contains('not rentable')) {
+      errorMessage = 'This product is not available for rent';
+    } else if (errorMessage.contains('Insufficient stock')) {
+      errorMessage = 'Not enough stock available for rent';
+    }
+    
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Rent validation failed')),
+      SnackBar(
+        content: Text(errorMessage),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 }
@@ -1006,7 +1064,7 @@ Widget _buildQuantitySelector() {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      r.doctorName ?? "Doctor",
+                      r.doctorName ?? " ",
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -1113,11 +1171,13 @@ Future<void> _submitReview() async {
       // ✅ إضافة التقييم محلياً (أو إعادة تحميل المنتج)
       final newReview = Review(
         id: DateTime.now().millisecondsSinceEpoch,
-        doctorId: 0,
+        productId: _product!.id,
+        doctorId: ApiService.doctorId ?? 0,
         rating: userRating,
         comment: reviewController.text,
         createdAt: DateTime.now(),
-        doctorName: "You",
+        doctorName: ApiService.doctorName?? ' ',
+        canDelete: true,
       );
       
       setState(() {
@@ -1139,7 +1199,7 @@ Future<void> _submitReview() async {
           warranty: _product!.warranty,
           setupDuration: _product!.setupDuration,
           supplierData: _product!.supplierData,
-          reviews: [..._product!.reviews, newReview],
+          reviews: [newReview, ..._product!.reviews],
         );
         userRating = 0;
         reviewController.clear();
@@ -1396,8 +1456,79 @@ Future<void> _deleteReview(Review review) async {
   // );
 
   // ---------------- ACTION BUTTON ----------------
+  Widget _buildNotifyButton() {
+  return SizedBox(
+    width: double.infinity,
+    child: Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _isNotified ? Colors.red.shade100 : Colors.amber,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+        onPressed: () async {
+          if (_isNotified) {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Cancel Notification'),
+                content: const Text('Are you sure you want to cancel this notification?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes', style: TextStyle(color: Colors.red))),
+                ],
+              ),
+            );
+            if (confirm != true) return;
+      
+            try {
+              await _apiService.undoRestockNotification(_product!.id);
+              setState(() => _isNotified = false);
+              Navigator.pop(context,true);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification cancelled')));
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))));
+            }
+          } else {
+            try {
+              await _apiService.requestRestockNotification(_product!.id);
+              setState(() => _isNotified = true);
+              Navigator.pop(context,true);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Notification requested!')));
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceAll('Exception:', ''))));
+            }
+          }
+        },
+        child: Text(
+          _isNotified ? "Undo" : "Notify Me",
+          style: TextStyle(color: _isNotified ? Colors.red : Colors.black, fontWeight: FontWeight.bold),
+        ),
+      ),
+    ),
+  );
+}
   final CartService _cartService = CartService();
-  Widget _actionButton() => Padding(
+  Widget _actionButton() {
+
+  if (_product!.stock == 0 && _product!.restockDate != null) {
+  return _buildNotifyButton();
+}
+  if(_product!.stock == 0 && _product!.restockDate == null){
+    return Padding(padding: const EdgeInsets.all(12),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          backgroundColor: Colors.grey,
+        ),
+        onPressed: null,
+        child: const Text(
+          "Out of Stock",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),);
+  }
+  return Padding(
     
     padding: const EdgeInsets.all(12),
     child: selectedPurchase == 1 ? ElevatedButton(
@@ -1474,11 +1605,7 @@ Future<void> _deleteReview(Review review) async {
               }
           },
       child: Text(
-        _product!.stock == 0
-            ? "Out of Stock"
-            : (_product!.stock == 0 && _product!.restockDate != null
-                  ? "Notify Me"
-                  : "Add To Cart"),
+     "Add To Cart",
         style: const TextStyle(
           color: Colors.white,
           fontSize: 16,
@@ -1494,9 +1621,16 @@ Future<void> _deleteReview(Review review) async {
       ),
       
     onPressed: _product!.isRentable ? _rentNow : null,
-    child: const Text('Rent Now'),
+    child: const Text(
+      'Rent Now',
+     style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),),
   ),
   );
+  }
 
   // ---------------- HELPERS ----------------
   Widget _card({required Widget child}) => Padding(
