@@ -6,24 +6,15 @@ import 'package:medconnect_app/models/rental_item.dart';
 import 'package:medconnect_app/services/Get_Doctor_Profile.dart';
 
 class CheckoutAddressPage extends StatefulWidget {
-
-final bool isRentalMode;
+  final bool isRentalMode;
   final RentalItem? rentalItem;
-
-
-
-   final List<CartItem> ?cartItems;
-
-
-  const CheckoutAddressPage({super.key
-  , this.cartItems,
-    this.isRentalMode = false,
-    this.rentalItem,
-  final List<CartItem> cartItems;
+  final List<CartItem>? cartItems;
 
   const CheckoutAddressPage({
     super.key,
-    required this.cartItems,
+    this.cartItems,
+    this.isRentalMode = false,
+    this.rentalItem,
   });
 
   @override
@@ -71,58 +62,51 @@ class _CheckoutAddressPageState extends State<CheckoutAddressPage> {
     }
   }
 
-  // تحديث العنوان
- // تحديث العنوان - ترجع true إذا نجحت، false إذا فشلت
-// تحديث العنوان - ترجع Map تحتوي على success والرسالة
-Future<Map<String, dynamic>> updateAddress(String newAddress) async {
-  setState(() {
-    isUpdating = true;
-  });
-
-  final result = await GetDoctorProfile.updateAddress(newAddress);
-
-  setState(() {
-    isUpdating = false;
-  });
-
-  if (result['success']) {
+  // تحديث العنوان - ترجع Map تحتوي على success والرسالة
+  Future<Map<String, dynamic>> updateAddress(String newAddress) async {
     setState(() {
-      address = newAddress;
+      isUpdating = true;
     });
-    return {
-      'success': true,
-      'message': result['message'] ?? 'Address updated successfully',
-    };
-  } else {
-    return {
-      'success': false,
-      'message': result['message'] ?? 'Failed to update address',
-    };
+
+    final result = await GetDoctorProfile.updateAddress(newAddress);
+
+    setState(() {
+      isUpdating = false;
+    });
+
+    if (result['success']) {
+      setState(() {
+        address = newAddress;
+      });
+      return {
+        'success': true,
+        'message': result['message'] ?? 'Address updated successfully',
+      };
+    } else {
+      return {
+        'success': false,
+        'message': result['message'] ?? 'Failed to update address',
+      };
+    }
   }
-}
 
-
-List<CartItem> get cartItemsForCheckout {
-  if (widget.isRentalMode && widget.rentalItem != null) {
-    return [
-      CartItem(
-        id: widget.rentalItem!.productId,
-        name: widget.rentalItem!.name,
-        image: widget.rentalItem!.image,
-        quantity: widget.rentalItem!.quantity,
-        price: widget.rentalItem!.price,
-        type: 'rent',
-        daily_rent: widget.rentalItem!.price / 30,
-         productId: widget.rentalItem!.productId,
-      ),
-    ];
+  List<CartItem> get cartItemsForCheckout {
+    if (widget.isRentalMode && widget.rentalItem != null) {
+      return [
+        CartItem(
+          id: widget.rentalItem!.productId,
+          name: widget.rentalItem!.name,
+          image: widget.rentalItem!.image,
+          quantity: widget.rentalItem!.quantity,
+          price: widget.rentalItem!.price,
+          type: 'rent',
+          daily_rent: widget.rentalItem!.price / 30,
+          productId: widget.rentalItem!.productId,
+        ),
+      ];
+    }
+    return widget.cartItems ?? cartItemsGlobal;
   }
-  return widget.cartItems ?? cartItemsGlobal;
-}
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -152,34 +136,48 @@ List<CartItem> get cartItemsForCheckout {
                 children: [
                   _buildStepper(),
                   const SizedBox(height: 24),
-
                   const Text(
                     "Delivery Information",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CheckoutSummaryPage(
-                        cartItems: cartItemsForCheckout,
-                        subtotal: cartItemsForCheckout.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
-                        taxes: 0.0,
-                        total: 0.0,
-                        selectedAddress: addresses[selectedAddress],
-                        isRentablMode:widget.isRentalMode,
-                        rentalItem:widget.rentalItem,
-                     ),
-                    )
-                  );
-                },
-                child: const Text(
-                  "Continue To Summary",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 16),
+                  _buildAddressCard(),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CheckoutSummaryPage(
+                              cartItems: cartItemsForCheckout,
+                              subtotal: cartItemsForCheckout.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
+                              taxes: 0.0,
+                              total: 0.0,
+                              selectedAddress: address,
+                              isRentalMode: widget.isRentalMode,
+                              rentalItem: widget.rentalItem,
+                            ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0D6EFD),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Continue To Summary",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -189,7 +187,6 @@ List<CartItem> get cartItemsForCheckout {
   }
 
   // ---------------- STEP INDICATOR ----------------
-
   Widget _buildStepper() {
     return Row(
       children: [
@@ -231,7 +228,6 @@ List<CartItem> get cartItemsForCheckout {
   }
 
   // ---------------- ADDRESS CARD (Single) ----------------
-
   Widget _buildAddressCard() {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -287,7 +283,6 @@ List<CartItem> get cartItemsForCheckout {
   }
 
   // ---------------- EDIT ADDRESS DIALOG ----------------
-
   void _showEditAddressDialog() {
     final TextEditingController controller = TextEditingController(text: address);
 
@@ -336,46 +331,54 @@ List<CartItem> get cartItemsForCheckout {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                  onPressed: () async {
-  final newAddress = controller.text.trim();
-  if (newAddress.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Please enter an address"),
-        backgroundColor: Colors.orange,
-      ),
-    );
-    return;
-  }
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final newAddress = controller.text.trim();
+                      if (newAddress.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Please enter an address"),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                        return;
+                      }
 
-  setState(() {
-    isUpdating = true;
-  });
+                      setState(() {
+                        isUpdating = true;
+                      });
 
-  final result = await updateAddress(newAddress); // result هي Map
+                      final result = await updateAddress(newAddress);
 
-  setState(() {
-    isUpdating = false;
-  });
+                      setState(() {
+                        isUpdating = false;
+                      });
 
-  if (result['success']) {
-    Navigator.pop(context); // إغلاق الديالوج
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result['message']), // ✅ رسالة من الـ API
-        backgroundColor: Colors.green,
-      ),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(result['message']), // ✅ رسالة من الـ API
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-},
-                    
+                      if (result['success']) {
+                        if (mounted) {
+                          Navigator.pop(context); // إغلاق الديالوج
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result['message']),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(result['message']),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0A4C8B),
                       foregroundColor: Colors.white,

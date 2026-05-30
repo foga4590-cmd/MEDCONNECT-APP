@@ -473,6 +473,7 @@ onTap: () {
   }
 }
 
+
 // ================= DISCOUNTS =================
 class DiscountsSection extends StatelessWidget {
   const DiscountsSection({super.key});

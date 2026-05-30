@@ -15,6 +15,10 @@ class CartItem {
   String? dateRange;
   DateTime? rStartDate;
   DateTime? rEndDate;
+  final int? rentalDays;      // ✅ أضف هذا
+  final String? startDate;    // ✅ أضف هذا
+  final String? endDate;      // ✅ أضف هذا
+
 
   CartItem({
     required this.id,
@@ -27,6 +31,9 @@ class CartItem {
     this.dateRange,
     required this.productId,
      this.rStartDate,
+     this.rentalDays,          // ✅ أضف هذا
+    this.startDate,           // ✅ أضف هذا
+    this.endDate,    
   });
 }
 

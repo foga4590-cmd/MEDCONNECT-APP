@@ -13,6 +13,7 @@ class Order {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<OrderItem> items;
+   
 
   Order({
     required this.id,
@@ -27,6 +28,7 @@ class Order {
     required this.createdAt,
     required this.updatedAt,
     required this.items,
+   
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -66,6 +68,11 @@ class OrderItem {
   final DateTime? rentalStart;
   final DateTime? rentalEnd;
   final Product? product;
+  final double? dailyRent;   // ✅ أضف هذا
+  final int? rentalDays;     // ✅ أضف هذا
+  final String? startDate;   // ✅ أضف هذا (اختياري)
+  final String? endDate;     // ✅ أضف هذا (اختياري)
+
 
   OrderItem({
     required this.id,
@@ -79,6 +86,10 @@ class OrderItem {
     this.rentalStart,
     this.rentalEnd,
     this.product,
+     this.dailyRent,
+    this.rentalDays,
+    this.startDate,
+    this.endDate,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {

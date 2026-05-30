@@ -1,36 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
-import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/models/rental_item.dart';
 import 'package:medconnect_app/services/payment_services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:medconnect_app/doctorAccount.dart';
 
 class CheckoutPaymentPage extends StatefulWidget {
+  final List<CartItem> cartItems;
+  final double subtotal;
+  final double total;
+  final String selectedAddress;
   final bool isRentalMode;
   final RentalItem? rentalItem;
 
   const CheckoutPaymentPage({
     super.key,
+    required this.cartItems,
+    required this.subtotal,
+    required this.total,
+    required this.selectedAddress,
     this.isRentalMode = false,
     this.rentalItem,
-import 'package:medconnect_app/services/payment_services.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:medconnect_app/doctorAccount.dart';
-import 'package:medconnect_app/cartScreen.dart'; // أضف هذا للاستيراد
-
-class CheckoutPaymentPage extends StatefulWidget {
-  final List<CartItem> cartItems; // ✅ أضف هذا
-  final double subtotal; // ✅ أضف هذا
-  final double total; // ✅ أضف هذا
-  final Map<String, String> selectedAddress; // ✅ أضف هذا
-
-  const CheckoutPaymentPage({
-    super.key,
-    required this.cartItems, // ✅ required
-    required this.subtotal, // ✅ required
-    required this.total, // ✅ required
-    required this.selectedAddress, // ✅ required
   });
 
   @override
@@ -38,34 +28,108 @@ class CheckoutPaymentPage extends StatefulWidget {
 }
 
 class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
-  String selectedPayment =
-      "cod"; // cod = Cash on Delivery, online = Online Payment
-
+  String selectedPayment = "cod";
   bool isLoading = false;
 
-  // بيانات الحجز (Rental)
-  String? selectedProductId;
-  String? rentalStartDate;
-  String? rentalEndDate;
-  String orderType = "sale";
-  // sale أو rental
-List<CartItem> get orderItems {
-  if (widget.isRentalMode && widget.rentalItem != null) {
-    return [
-      CartItem(
-        id: widget.rentalItem!.productId,
-        productId: widget.rentalItem!.productId,
-        name: widget.rentalItem!.name,
-        image: widget.rentalItem!.image,
-        quantity: widget.rentalItem!.quantity,
-        price: widget.rentalItem!.price,
-        type: 'rent',
-        daily_rent: widget.rentalItem!.price / 30,
-      ),
-    ];
+  // تحويل صيغة التاريخ من mm/dd/yyyy إلى DateTime
+  DateTime? parseDate(String dateString) {
+    try {
+      final parts = dateString.split('/');
+      if (parts.length == 3) {
+        final month = int.parse(parts[0]);
+        final day = int.parse(parts[1]);
+        final year = int.parse(parts[2]);
+        return DateTime(year, month, day);
+      }
+      return null;
+    } catch (e) {
+      print('Error parsing date: $e');
+      return null;
+    }
   }
-  return cartItemsGlobal; // ✅ الكارت العادي
-}
+
+  // حساب عدد أيام الإيجار من التواريخ
+  int getRentalDays() {
+    if (widget.rentalItem == null) return 0;
+    if (widget.rentalItem!.startDate.isEmpty || widget.rentalItem!.endDate.isEmpty) {
+      return 0;
+    }
+    
+    try {
+      final start = parseDate(widget.rentalItem!.startDate);
+      final end = parseDate(widget.rentalItem!.endDate);
+      
+      if (start == null || end == null) return 0;
+      
+      return end.difference(start).inDays + 1;
+    } catch (e) {
+      print('❌ Error calculating rental days: $e');
+      return 0;
+    }
+  }
+
+  // حساب السعر اليومي
+  double getDailyRate() {
+    if (widget.rentalItem == null) return 0;
+    return widget.rentalItem!.price / 30;
+  }
+
+  // حساب إجمالي سعر الإيجار
+  double getTotalRentalPrice() {
+    if (widget.rentalItem == null) return 0;
+    
+    // إذا كان الـ cartItems يحتوي على السعر المحسوب بالفعل
+    if (widget.cartItems.isNotEmpty && widget.cartItems.first.type == 'rent') {
+      return widget.cartItems.first.price * widget.cartItems.first.quantity;
+    }
+    
+    // حساب جديد
+    final dailyRate = getDailyRate();
+    final days = getRentalDays();
+    final quantity = widget.rentalItem!.quantity;
+    return dailyRate * days * quantity;
+  }
+
+  // دالة لجلب العناصر حسب الوضع
+  List<CartItem> getDisplayItems() {
+    if (widget.isRentalMode && widget.rentalItem != null) {
+      final dailyRate = getDailyRate();
+      final days = getRentalDays();
+      final totalRentalPrice = getTotalRentalPrice();
+      
+      return [
+        CartItem(
+          id: widget.rentalItem!.productId,
+          productId: widget.rentalItem!.productId,
+          name: widget.rentalItem!.name,
+          image: widget.rentalItem!.image,
+          quantity: widget.rentalItem!.quantity,
+          price: totalRentalPrice,
+          type: 'rent',
+          daily_rent: dailyRate,
+          rentalDays: days,
+          startDate: widget.rentalItem!.startDate,
+          endDate: widget.rentalItem!.endDate,
+        )
+      ];
+    } else {
+      return widget.cartItems;
+    }
+  }
+
+  // دالة لحساب المجموع
+  double calculateTotalAmount() {
+    if (widget.isRentalMode && widget.rentalItem != null) {
+      return getTotalRentalPrice();
+    } else {
+      double sum = 0;
+      for (var item in widget.cartItems) {
+        sum += item.price * item.quantity;
+      }
+      return sum;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,13 +156,13 @@ List<CartItem> get orderItems {
                     const SizedBox(height: 24),
                     _buildPaymentOptions(),
                     const SizedBox(height: 24),
-                    _buildOrderSummary(), // ✅ الآن تستخدم widget.cartItems
+                    _buildOrderSummary(),
                     const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             _buildPlaceOrderButton(),
           ],
         ),
@@ -106,10 +170,6 @@ List<CartItem> get orderItems {
     );
   }
 
-
-
-
-  // ================= Stepper =================
   Widget _buildStepper() {
     return Row(
       children: [
@@ -143,9 +203,7 @@ List<CartItem> get orderItems {
       ),
     );
   }
-  // ================= Payment Options =================
 
-  // ================= Payment Options =================
   Widget _buildPaymentOptions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -222,85 +280,156 @@ List<CartItem> get orderItems {
     );
   }
 
-  // ================= Order Summary =================
   Widget _buildOrderSummary() {
-
-      final items = orderItems;
-
-    
-    double subtotal = items.fold(
-      0,
-      (sum, item) => sum + (item.price * item.quantity),
-    );
-
+    final items = getDisplayItems();
+    double subtotal = calculateTotalAmount();
     double insurance = 50;
     double delivery = 25;
-
     double total = subtotal + insurance + delivery;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ====== عرض المنتجات ديناميكياً ======
-          ...items.map((item) {
-            return Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      height: 70,
-                      width: 70,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey.shade200,
+          Row(
+            children: [
+              Icon(
+                widget.isRentalMode ? Icons.credit_card : Icons.shopping_cart,
+                size: 20,
+                color: const Color(0xFF0D6EFD),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                widget.isRentalMode ? 'Rental Order Summary' : 'Order Summary',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0D6EFD),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          if (items.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(
+                child: Text('No items to display'),
+              ),
+            )
+          else
+            ...items.map((item) {
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        height: 70,
+                        width: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey.shade200,
+                        ),
+                        child: item.image.isNotEmpty
+                            ? Image.network(
+                                item.image,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.medical_services,
+                                      size: 40, color: Colors.grey);
+                                },
+                              )
+                            : const Icon(Icons.medical_services,
+                                size: 40, color: Colors.grey),
                       ),
-                      child: Image.network(item.image, fit: BoxFit.contain),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Quantity: ${item.quantity}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                            if (item.type == 'rent') ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Rental • Daily: \$${item.daily_rent.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              if (item.rentalDays != null && item.rentalDays! > 0) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Duration: ${item.rentalDays} days',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            item.name,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Qty: ${item.quantity}',
+                            '\$${(item.price * item.quantity).toStringAsFixed(2)}',
                             style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
+                              color: Color(0xFF0D6EFD),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
+                          if (item.type == 'rent' && item.rentalDays != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '(\$${item.daily_rent.toStringAsFixed(2) } × ${item.rentalDays} days × ${item.quantity})',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                    ),
-                    Text(
-                      '\$${item.price.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Color(0xFF0D6EFD),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-            );
-          }),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              );
+            }),
 
           const Divider(height: 32),
-
           _priceRow('Subtotal', '\$${subtotal.toStringAsFixed(2)}'),
           _priceRow('Insurance', '\$${insurance.toStringAsFixed(2)}'),
           _priceRow('Delivery', '\$${delivery.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
           _priceRow('Total', '\$${total.toStringAsFixed(2)}', isTotal: true),
-          
-          // ✅ عرض عنوان التوصيل
+
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 8),
@@ -310,7 +439,7 @@ List<CartItem> get orderItems {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  widget.selectedAddress['address'] ?? 'No address',
+                  widget.selectedAddress,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
               ),
@@ -348,7 +477,6 @@ List<CartItem> get orderItems {
     );
   }
 
-  // ================= Button =================
   Widget _buildPlaceOrderButton() {
     return SizedBox(
       width: double.infinity,
@@ -380,108 +508,48 @@ List<CartItem> get orderItems {
     );
   }
 
-  /// ✅ دالة التعامل مع طلب الدفع
   Future<void> _handlePlaceOrder() async {
-    // ✅ التحقق من وجود منتجات
-    if (cartItemsGlobal.isEmpty && !widget.isRentalMode) {
-      _showErrorDialog('Your cart is empty');
+    final items = getDisplayItems();
+    
+    if (items.isEmpty) {
+      _showErrorDialog('No items to order');
       return;
     }
 
     setState(() => isLoading = true);
 
     try {
-      //#################################################################################
-      // ############## new editing here #######################
-      String orderType = 'sale';
-      String? rentalStartDate;
-      String? rentalEndDate;
-      int? productId;
-      int quantity = 1;
       if (widget.isRentalMode && widget.rentalItem != null) {
-        orderType = 'rental';
-        rentalStartDate = widget.rentalItem!.startDate;
-        rentalEndDate = widget.rentalItem!.endDate;
-        productId = widget.rentalItem!.productId;
-        quantity = widget.rentalItem!.quantity;
-      }
+        String orderType = 'rental';
+        String? rentalStartDate = widget.rentalItem!.startDate;
+        String? rentalEndDate = widget.rentalItem!.endDate;
+        int productId = widget.rentalItem!.productId;
+        int quantity = widget.rentalItem!.quantity;
 
-    // ✅ لو كان إيجار، نتعامل مع منتج واحد فقط
-    if (widget.isRentalMode && widget.rentalItem != null) {
-      final response = selectedPayment == 'cod'
-          ? await PaymentService.placeCashOrder(
-              orderType: orderType,
-              productId: productId.toString(),
-              quantity: quantity,
-              rentalStartDate: rentalStartDate,
-              rentalEndDate: rentalEndDate,
-            )
-          : await PaymentService.placeOnlineOrder(
-              orderType: orderType,
-              productId: productId.toString(),
-              quantity: quantity,
-              rentalStartDate: rentalStartDate,
-              rentalEndDate: rentalEndDate,
-            );
-
-      if (!mounted) return;
-
-      if (response['success'] == true) {
-        // ✅ نجاح الطلب
-        final link = response['redirectTo'];
-        final invoice = response['invoice'];
-        final message = response['status'] ?? 'Order placed successfully';
-
-        if (selectedPayment == 'online' && link != null && link.isNotEmpty) {
-          await _launchURL(link);
-          _showSuccessDialog(
-            message: message,
-            invoice: invoice,
-            paymentLink: link,
-          );
-        } else {
-          _showSuccessDialog(
-            message: message,
-            invoice: invoice,
-            paymentLink: selectedPayment == 'online' ? link : null,
-          );
-        }
-      } else {
-        _showErrorDialog(
-          response['status'] ?? response['error'] ?? 'Failed to place order',
-        );
-      }
-//###########################################################################################
-      }else{
-      // ✅ معالجة كل منتج في السلة
-      for (var item in orderItems) {
         final response = selectedPayment == 'cod'
             ? await PaymentService.placeCashOrder(
                 orderType: orderType,
-                productId: item.productId.toString(),
-                quantity: item.quantity,
-                rentalStartDate: orderType == 'rental' ? rentalStartDate : null,
-                rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
+                productId: productId.toString(),
+                quantity: quantity,
+                rentalStartDate: rentalStartDate,
+                rentalEndDate: rentalEndDate,
               )
             : await PaymentService.placeOnlineOrder(
                 orderType: orderType,
-                productId: item.productId.toString(),
-                quantity: item.quantity,
-                rentalStartDate: orderType == 'rental' ? rentalStartDate : null,
-                rentalEndDate: orderType == 'rental' ? rentalEndDate : null,
+                productId: productId.toString(),
+                quantity: quantity,
+                rentalStartDate: rentalStartDate,
+                rentalEndDate: rentalEndDate,
               );
 
         if (!mounted) return;
 
         if (response['success'] == true) {
-          // ✅ نجح الطلب
-          final link =
-              response['redirectTo']; // 🔗 الحصول على الرابط من الاستجابة
+          final link = response['redirectTo'];
           final invoice = response['invoice'];
           final message = response['status'] ?? 'Order placed successfully';
 
           if (selectedPayment == 'online' && link != null && link.isNotEmpty) {
-            print('🔗 Opening payment link: $link');
             await _launchURL(link);
             _showSuccessDialog(
               message: message,
@@ -499,11 +567,55 @@ List<CartItem> get orderItems {
           _showErrorDialog(
             response['status'] ?? response['error'] ?? 'Failed to place order',
           );
-          return;
+        }
+      } else {
+        for (var item in items) {
+          final response = selectedPayment == 'cod'
+              ? await PaymentService.placeCashOrder(
+                  orderType: 'sale',
+                  productId: item.productId.toString(),
+                  quantity: item.quantity,
+                  rentalStartDate: null,
+                  rentalEndDate: null,
+                )
+              : await PaymentService.placeOnlineOrder(
+                  orderType: 'sale',
+                  productId: item.productId.toString(),
+                  quantity: item.quantity,
+                  rentalStartDate: null,
+                  rentalEndDate: null,
+                );
+
+          if (!mounted) return;
+
+          if (response['success'] == true) {
+            final link = response['redirectTo'];
+            final invoice = response['invoice'];
+            final message = response['status'] ?? 'Order placed successfully';
+
+            if (selectedPayment == 'online' && link != null && link.isNotEmpty) {
+              await _launchURL(link);
+              _showSuccessDialog(
+                message: message,
+                invoice: invoice,
+                paymentLink: link,
+              );
+            } else {
+              _showSuccessDialog(
+                message: message,
+                invoice: invoice,
+                paymentLink: selectedPayment == 'online' ? link : null,
+              );
+            }
+          } else {
+            _showErrorDialog(
+              response['status'] ?? response['error'] ?? 'Failed to place order',
+            );
+            return;
+          }
         }
       }
-    } 
-    }catch (e) {
+    } catch (e) {
       print('❌ Exception: $e');
       if (mounted) {
         _showErrorDialog('An unexpected error occurred: $e');
@@ -515,24 +627,18 @@ List<CartItem> get orderItems {
     }
   }
 
-  /// 🔗 دالة فتح الرابط
   Future<void> _launchURL(String url) async {
     try {
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-        // بعد ما ينهي الدفع ويرجع، ندير عملية نظيفة
-        print('✅ Payment link opened');
       } else {
-        print('❌ Could not launch URL: $url');
         _showErrorDialog('Could not open payment page. Please try again.');
       }
     } catch (e) {
-      print('❌ Error launching URL: $e');
       _showErrorDialog('Error opening payment page: $e');
     }
   }
 
-  /// ✅ عرض نافذة النجاح
   void _showSuccessDialog({
     required String message,
     String? invoice,
@@ -587,7 +693,7 @@ List<CartItem> get orderItems {
               Navigator.pop(context);
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (_) => doctorAccountPage()),
+                MaterialPageRoute(builder: (_) =>  doctorAccountPage()),
                 (route) => false,
               );
             },
@@ -598,7 +704,6 @@ List<CartItem> get orderItems {
     );
   }
 
-  /// ❌ عرض نافذة الخطأ
   void _showErrorDialog(String message) {
     showDialog(
       context: context,

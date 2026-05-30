@@ -9,8 +9,8 @@ class CheckoutSummaryPage extends StatelessWidget {
   final double subtotal;
   final double taxes;
   final double total;
-  final Map<String, String> selectedAddress;
-  final bool isRentablMode; 
+  final String selectedAddress;
+  final bool isRentalMode; 
   final RentalItem? rentalItem;
 
   const CheckoutSummaryPage({
@@ -20,12 +20,132 @@ class CheckoutSummaryPage extends StatelessWidget {
     required this.subtotal,
     required this.taxes,
     required this.total,
-    this.isRentablMode = false, 
+    this.isRentalMode = false, 
     this.rentalItem,
   });
 
+  // تحويل صيغة التاريخ من mm/dd/yyyy إلى DateTime
+  DateTime? parseDate(String dateString) {
+    try {
+      // الصيغة المستخدمة في ProductDetailsPage: "MM/DD/YYYY"
+      final parts = dateString.split('/');
+      if (parts.length == 3) {
+        final month = int.parse(parts[0]);
+        final day = int.parse(parts[1]);
+        final year = int.parse(parts[2]);
+        return DateTime(year, month, day);
+      }
+      return null;
+    } catch (e) {
+      print('Error parsing date: $e');
+      return null;
+    }
+  }
+
+  // حساب عدد أيام الإيجار من التواريخ
+  int getRentalDays() {
+    if (rentalItem == null) return 0;
+    if (rentalItem!.startDate.isEmpty || rentalItem!.endDate.isEmpty) {
+      print('⚠️ Start date or end date is empty');
+      return 0;
+    }
+    
+    try {
+      print('📅 Start date from rentalItem: ${rentalItem!.startDate}');
+      print('📅 End date from rentalItem: ${rentalItem!.endDate}');
+      
+      final start = parseDate(rentalItem!.startDate);
+      final end = parseDate(rentalItem!.endDate);
+      
+      if (start == null || end == null) {
+        print('❌ Failed to parse dates');
+        return 0;
+      }
+      
+      final days = end.difference(start).inDays + 1;
+      print('✅ Rental days calculated: $days');
+      return days;
+    } catch (e) {
+      print('❌ Error calculating rental days: $e');
+      return 0;
+    }
+  }
+
+  // حساب السعر اليومي (من سعر المنتج / 30)
+  double getDailyRate() {
+    if (rentalItem == null) return 0;
+    // السعر اليومي = سعر المنتج الكامل / 30
+    final dailyRate = rentalItem!.price / 30;
+    print('💰 Daily rate: $dailyRate (product price: ${rentalItem!.price})');
+    return dailyRate;
+  }
+
+  // حساب إجمالي سعر الإيجار (السعر اليومي × عدد الأيام × الكمية)
+  double getTotalRentalPrice() {
+    if (rentalItem == null) return 0;
+    final dailyRate = getDailyRate();
+    final days = getRentalDays();
+    final quantity = rentalItem!.quantity;
+    final total = dailyRate * days * quantity;
+    print('💰 Total rental price: $dailyRate × $days days × $quantity = $total');
+    return total;
+  }
+
+  // دالة لجلب العناصر حسب الوضع
+  List<CartItem> getDisplayItems() {
+    if (isRentalMode && rentalItem != null) {
+      final dailyRate = getDailyRate();
+      final days = getRentalDays();
+      final totalRentalPrice = getTotalRentalPrice();
+      
+      print('📊 Display Items - Daily Rate: $dailyRate, Days: $days, Total: $totalRentalPrice');
+      
+      return [
+        CartItem(
+          id: rentalItem!.productId,
+          productId: rentalItem!.productId,
+          name: rentalItem!.name,
+          image: rentalItem!.image,
+          quantity: rentalItem!.quantity,
+          price: totalRentalPrice,
+          type: 'rent',
+          daily_rent: dailyRate,
+          rentalDays: days,
+          startDate: rentalItem!.startDate,
+          endDate: rentalItem!.endDate,
+        )
+      ];
+    } else {
+      return cartItems;
+    }
+  }
+
+  // دالة لحساب المجموع حسب الوضع
+  double calculateTotalAmount() {
+    if (isRentalMode && rentalItem != null) {
+      return getTotalRentalPrice();
+    } else {
+      double sum = 0;
+      for (var item in cartItems) {
+        sum += item.price * item.quantity;
+      }
+      return sum;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // طباعة بيانات الـ rentalItem للتأكد
+    if (isRentalMode && rentalItem != null) {
+      print('🔍 RentalItem Data:');
+      print('   - productId: ${rentalItem!.productId}');
+      print('   - name: ${rentalItem!.name}');
+      print('   - price: ${rentalItem!.price}');
+      print('   - quantity: ${rentalItem!.quantity}');
+      print('   - startDate: ${rentalItem!.startDate}');
+      print('   - endDate: ${rentalItem!.endDate}');
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       appBar: AppBar(
@@ -57,7 +177,7 @@ class CheckoutSummaryPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildDeliveryCard(context), // 🔹 هيعرض العنوان المختار الآن
+                    _buildDeliveryCard(context),
                     const SizedBox(height: 24),
                     const Text(
                       'Order Summary',
@@ -79,7 +199,6 @@ class CheckoutSummaryPage extends StatelessWidget {
     );
   }
 
-  // ========== Stepper ==========
   Widget _buildStepper() {
     return Row(
       children: [
@@ -116,7 +235,6 @@ class CheckoutSummaryPage extends StatelessWidget {
     );
   }
 
-  // ========== Delivery Card ==========
   Widget _buildDeliveryCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -130,21 +248,20 @@ class CheckoutSummaryPage extends StatelessWidget {
               color: const Color(0xFFEAF2FF),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.local_hospital, color: Color(0xFF0D6EFD)),
+            child: const Icon(Icons.location_on, color: Color(0xFF0D6EFD)),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔹 استخدم العنوان المختار
-                Text(
-                  selectedAddress['title'] ?? '',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                const Text(
+                  'Delivery Address',
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  selectedAddress['address'] ?? '',
+                  selectedAddress.isEmpty ? "No address selected" : selectedAddress,
                   style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ],
@@ -161,32 +278,12 @@ class CheckoutSummaryPage extends StatelessWidget {
     );
   }
 
-  // ========== Order Summary ==========
-
   Widget _buildOrderSummary() {
-
-     final items = isRentablMode && rentalItem != null
-      ? [
-          CartItem(
-            id: rentalItem!.productId,
-            productId: rentalItem!.productId,
-            name: rentalItem!.name,
-            image: rentalItem!.image,
-            quantity: rentalItem!.quantity,
-            price: rentalItem!.price,
-            type: 'rent',
-            daily_rent: rentalItem!.price / 30,
-          )
-        ]
-      : cartItems;
-
-    double subtotal = items.fold(
-      0,
-      (sum, item) => sum + (item.price * item.quantity),
-    );
+    final displayItems = getDisplayItems();
+    double calculatedSubtotal = calculateTotalAmount();
     double insurance = 50;
     double delivery = 25;
-    double total = subtotal + insurance + delivery;
+    double calculatedTotal = calculatedSubtotal + insurance + delivery;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -194,60 +291,154 @@ class CheckoutSummaryPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ====== عرض المنتجات ديناميكياً ======
-          ...items.map((item) {
-            return Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      height: 70,
-                      width: 70,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey.shade200,
+          Row(
+            children: [
+              Icon(
+                isRentalMode ? Icons.credit_card : Icons.shopping_cart,
+                size: 20,
+                color: const Color(0xFF0D6EFD),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isRentalMode ? 'Rental Order Summary' : 'Order Summary',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF0D6EFD),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          if (displayItems.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(
+                child: Text('No items to display'),
+              ),
+            )
+          else
+            ...displayItems.map((item) {
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        height: 70,
+                        width: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey.shade200,
+                        ),
+                        child: item.image.isNotEmpty
+                            ? Image.network(
+                                item.image,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.medical_services,
+                                      size: 40, color: Colors.grey);
+                                },
+                              )
+                            : const Icon(Icons.medical_services,
+                                size: 40, color: Colors.grey),
                       ),
-                      child: Image.network(item.image, fit: BoxFit.contain),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              style: const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Quantity: ${item.quantity}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                            if (item.type == 'rent') ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'Rental • Daily: \$${item.daily_rent.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              if (item.rentalDays != null && item.rentalDays! > 0) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Duration: ${item.rentalDays} days',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ],
+                              if (item.startDate != null && item.endDate != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${item.startDate} → ${item.endDate}',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            item.name,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Qty: ${item.quantity}',
+                            '\$${(item.price * item.quantity).toStringAsFixed(2)}',
                             style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
+                              color: Color(0xFF0D6EFD),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
+                          if (item.type == 'rent' && item.rentalDays != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              '(\$${item.daily_rent.toStringAsFixed(2)} × ${item.rentalDays} days × ${item.quantity})',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                    ),
-                    Text(
-                      '\$${item.price.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Color(0xFF0D6EFD),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-            );
-          }),
-          const Divider(height: 32),
-          _priceRow('Subtotal', '\$${subtotal.toStringAsFixed(2)}'),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                ],
+              );
+            }),
+          
+          const SizedBox(height: 8),
+          _priceRow('Subtotal', '\$${calculatedSubtotal.toStringAsFixed(2)}'),
           _priceRow('Insurance', '\$${insurance.toStringAsFixed(2)}'),
           _priceRow('Delivery', '\$${delivery.toStringAsFixed(2)}'),
           const SizedBox(height: 8),
-          _priceRow('Total', '\$${total.toStringAsFixed(2)}', isTotal: true),
+          _priceRow('Total', '\$${calculatedTotal.toStringAsFixed(2)}', isTotal: true),
         ],
       ),
     );
@@ -280,8 +471,11 @@ class CheckoutSummaryPage extends StatelessWidget {
     );
   }
 
-  // ========== Continue Button ==========
   Widget _buildButton(BuildContext context) {
+    final displayItems = getDisplayItems();
+    double calculatedSubtotal = calculateTotalAmount();
+    double calculatedTotal = calculatedSubtotal + 50 + 25;
+
     return SizedBox(
       width: double.infinity,
       height: 52,
@@ -293,25 +487,18 @@ class CheckoutSummaryPage extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => CheckoutPaymentPage(
-              isRentalMode: isRentablMode,
-              rentalItem:rentalItem
-            )),
+            MaterialPageRoute(
+              builder: (_) => CheckoutPaymentPage(
+                cartItems: displayItems,
+                subtotal: calculatedSubtotal,
+                total: calculatedTotal,
+                selectedAddress: selectedAddress,
+                isRentalMode: isRentalMode,
+                rentalItem: rentalItem,
+              ),
+            ),
           );
         },
-      onPressed: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => CheckoutPaymentPage(
-        cartItems: cartItems,
-        subtotal: subtotal,
-        total: total,
-        selectedAddress: selectedAddress,
-      ),
-    ),
-  );
-},
         child: const Text(
           'Continue To Payment',
           style: TextStyle(
@@ -324,7 +511,6 @@ class CheckoutSummaryPage extends StatelessWidget {
     );
   }
 
-  // ========== Card Style ==========
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: Colors.white,
