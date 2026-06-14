@@ -30,6 +30,14 @@ static String? _doctorName;
   _doctorId = userData['id'];
   _doctorName = userData['fullname'];
 }
+
+// داخل class ApiService
+static List<Product>? cachedProducts;
+static List<Category>? cachedCategories;
+
+static void clearCache() {
+  cachedProducts = null;
+}
 //static Map<String, dynamic>? _cachedSupplierData;
   Future<Map<String, dynamic>> login({
     required String email,
@@ -224,6 +232,7 @@ static String? _doctorName;
           List<Category> categories = (data['data'] as List)
               .map((json) => Category.fromJson(json))
               .toList();
+               cachedCategories = categories;
 
           print('✅ Loaded ${categories.length} categories');
           return categories;
@@ -246,7 +255,7 @@ static String? _doctorName;
   // في api_service.dart
   Future<Map<String, dynamic>> fetchProductsWithPagination({
     int page = 1,
-    int perPage = 2,
+    int perPage = 10,
   }) async {
     try {
       if (_token == null) {
@@ -277,6 +286,7 @@ static String? _doctorName;
 
       print('📥 Response Status: ${response.statusCode}');
       print('📦 Response Body Length: ${response.body.length} chars');
+      
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
@@ -294,13 +304,15 @@ static String? _doctorName;
           print('✅ Loaded ${products.length} products from page $page');
           print('🏷️ Product names: ${products.map((p) => p.name).join(', ')}');
           print('=====================================');
-
+        if (response.statusCode == 200 && page == 1) {
+  cachedProducts = products; // خزن المنتجات
+}
           return {
             'products': products,
             
             'lastPage': data['last_page'] ?? 1,
             'total': data['total'] ?? 0,
-            'perPage': 2,
+            'perPage': data['per_page'] ?? perPage,
           };
         } else {
           print('❌ API returned success=false: ${data['message']}');
