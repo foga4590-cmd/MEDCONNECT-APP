@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'otpVerificationScreen.dart';
 import 'package:medconnect_app/signinScreen.dart';
 import 'package:medconnect_app/services/password_service.dart';
+
 class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+  final bool isChangePassword; // 👈 معامل جديد
+  const ForgotPasswordScreen({super.key, this.isChangePassword = false});
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
@@ -28,11 +30,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     const emailPattern = r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$';
     final regex = RegExp(emailPattern);
-    
+
     if (!regex.hasMatch(value.trim())) {
       return 'Please enter a valid email address';
     }
-    
+
     return null;
   }
 
@@ -45,7 +47,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final result = await PasswordService.forgetPassword(_emailController.text.trim());
+      final result = await PasswordService.forgetPassword(
+        _emailController.text.trim(),
+      );
 
       if (!mounted) return;
 
@@ -53,14 +57,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => OtpVerificationScreen(
-              email: _emailController.text.trim(),
-            ),
+            builder: (context) =>
+                OtpVerificationScreen(email: _emailController.text.trim()),
           ),
         );
       } else {
         setState(() {
-          _errorMessage = result['message'] ?? 'An error occurred. Please try again.';
+          _errorMessage =
+              result['message'] ?? 'An error occurred. Please try again.';
         });
       }
     } catch (e) {
@@ -108,11 +112,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       onPressed: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Reset Password',
+                       'Reset Password',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
@@ -125,7 +129,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
             ),
           ),
-          
+
           // Main Content
           Expanded(
             child: SingleChildScrollView(
@@ -134,7 +138,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 16),
-                  
+
                   // Icon and Title
                   Center(
                     child: Column(
@@ -142,9 +146,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         Container(
                           width: 96,
                           height: 96,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD1E4FF),
-                            borderRadius: BorderRadius.circular(48),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD1E4FF),
+                            borderRadius: BorderRadius.all(Radius.circular(48)),
                           ),
                           child: const Icon(
                             Icons.lock_reset,
@@ -153,19 +157,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text(
-                          'Forgot Password?',
-                          style: TextStyle(
+                        Text(
+                          widget.isChangePassword
+                              ? 'Change Password?'
+                              : 'Forgot Password?',
+                          style: const TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF222222),
                           ),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
-                          'Enter your registered email address\nand we\'ll send you a verification code',
+                        Text(
+                          widget.isChangePassword
+                              ? 'Enter your registered email address to change your password'
+                              : 'Enter your registered email address and we\'ll send you a verification code',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF5E6F7F),
                             height: 1.5,
@@ -174,21 +182,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Form Container
                   Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFE0E0E0)),
+                      borderRadius: BorderRadius.all(Radius.circular(24)),
+                      border: Border(
+                        top: BorderSide(color: Color(0xFFE0E0E0)),
+                        bottom: BorderSide(color: Color(0xFFE0E0E0)),
+                        left: BorderSide(color: Color(0xFFE0E0E0)),
+                        right: BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: Color.fromARGB(8, 0, 0, 0),
                           blurRadius: 24,
-                          offset: const Offset(0, 8),
+                          offset: Offset(0, 8),
                         ),
                       ],
                     ),
@@ -257,7 +270,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             ),
                           ),
-                          
+
                           if (_errorMessage != null) ...[
                             const SizedBox(height: 12),
                             Container(
@@ -265,9 +278,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 horizontal: 12,
                                 vertical: 8,
                               ),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
+                              decoration: const BoxDecoration(
+                                color: Color.fromARGB(26, 244, 67, 54),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(8),
+                                ),
                               ),
                               child: Row(
                                 children: [
@@ -290,9 +305,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             ),
                           ],
-                          
+
                           const SizedBox(height: 24),
-                          
+
                           // Submit Button
                           SizedBox(
                             height: 56,
@@ -312,13 +327,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: const [
                                         Text(
                                           'Send Verification Code',
@@ -333,57 +350,57 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                     ),
                             ),
                           ),
-                          
-                         const SizedBox(height: 24),
-const Divider(color: Color(0xFFE0E0E0)),
-const SizedBox(height: 16),
 
-// Back to Login Button with Remember Password text
-Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    const Text(
-      'Remember Your Password? ',
-      style: TextStyle(
-        color: Color(0xFF222222),
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-    GestureDetector(
-      onTap: () {
-        // Navigate back to SignIn Screen and clear all previous routes
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const SignInScreen()), // استخدم اسم الـ class بتاع SignInScreen
-          (route) => false,
-        );
-      },
-      child: const Text(
-        'Back to Login',
-        style: TextStyle(
-          color: Color(0xFF0066FF),
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          decoration: TextDecoration.underline,
-        ),
-      ),
-    ),
-  ],
-),
+                          const SizedBox(height: 24),
+                          const Divider(color: Color(0xFFE0E0E0)),
+                          const SizedBox(height: 16),
+
+                          // Back to Login Button with Remember Password text
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Remember Your Password? ',
+                                style: TextStyle(
+                                  color: Color(0xFF222222),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  // Navigate back to SignIn Screen and clear all previous routes
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const SignInScreen(),
+                                    ), // استخدم اسم الـ class بتاع SignInScreen
+                                    (route) => false,
+                                  );
+                                },
+                                child: const Text(
+                                  'Back to Login',
+                                  style: TextStyle(
+                                    color: Color(0xFF0066FF),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  
-                 
                 ],
               ),
             ),
           ),
-          
+
           // Bottom Footer
-         
         ],
       ),
     );

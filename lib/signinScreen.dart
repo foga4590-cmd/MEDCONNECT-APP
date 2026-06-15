@@ -160,7 +160,7 @@ class _SignInScreenState extends State<SignInScreen> {
         children: [
           // AppBar (كما هو)
           Container(
-            height: 100,
+            height: 50,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -168,7 +168,7 @@ class _SignInScreenState extends State<SignInScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(50)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
             ),
             child: SafeArea(
               child: Padding(

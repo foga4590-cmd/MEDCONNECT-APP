@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
 import 'package:medconnect_app/models/rental_item.dart';
 import 'package:medconnect_app/services/payment_services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:medconnect_app/doctorAccount.dart';
+import 'package:medconnect_app/wep_app.dart';
+
 
 class CheckoutPaymentPage extends StatefulWidget {
   final List<CartItem> cartItems;
@@ -523,21 +524,37 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
         String orderType = 'rental';
         String? rentalStartDate = widget.rentalItem!.startDate;
         String? rentalEndDate = widget.rentalItem!.endDate;
-        int productId = widget.rentalItem!.productId;
-        int quantity = widget.rentalItem!.quantity;
-
+        
         final response = selectedPayment == 'cod'
             ? await PaymentService.placeCashOrder(
                 orderType: orderType,
-                productId: productId.toString(),
-                quantity: quantity,
+                cartItems: items.map((item) => {
+                  'product_id': item.productId,
+                  'quantity': item.quantity,
+                  'price': item.price,
+                  'type': item.type,
+                  'daily_rent': item.daily_rent,
+                  'rental_days': item.rentalDays,
+                  'start_date': item.startDate,
+                  'end_date': item.endDate,
+                }).toList(),
+                cartTotal: items.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
                 rentalStartDate: rentalStartDate,
                 rentalEndDate: rentalEndDate,
               )
             : await PaymentService.placeOnlineOrder(
                 orderType: orderType,
-                productId: productId.toString(),
-                quantity: quantity,
+                cartItems: items.map((item) => {
+                  'product_id': item.productId.toString(),
+                  'quantity': item.quantity,
+                  'price': item.price,
+                  'type': item.type,
+                  'daily_rent': item.daily_rent,
+                  'rental_days': item.rentalDays,
+                  'start_date': item.startDate,
+                  'end_date': item.endDate,
+                }).toList(),
+                cartTotal: items.fold(0.0, (sum, item) => sum + (item.price * item.quantity)),
                 rentalStartDate: rentalStartDate,
                 rentalEndDate: rentalEndDate,
               );
@@ -546,7 +563,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
 
         if (response['success'] == true) {
           final link = response['redirectTo'];
-          final invoice = response['invoice'];
+          final invoice = response['invoice'].toString();
           final message = response['status'] ?? 'Order placed successfully';
 
           if (selectedPayment == 'online' && link != null && link.isNotEmpty) {
@@ -573,15 +590,37 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
           final response = selectedPayment == 'cod'
               ? await PaymentService.placeCashOrder(
                   orderType: 'sale',
-                  productId: item.productId.toString(),
-                  quantity: item.quantity,
+                  cartItems: [
+                    {
+                      'product_id': item.productId.toString(),
+                      'quantity': item.quantity,
+                      'price': item.price,
+                      'type': item.type,
+                      'daily_rent': item.daily_rent,
+                      'rental_days': item.rentalDays,
+                      'start_date': item.startDate,
+                      'end_date': item.endDate,
+                    }
+                  ],
+                  cartTotal: item.price * item.quantity,
                   rentalStartDate: null,
                   rentalEndDate: null,
                 )
               : await PaymentService.placeOnlineOrder(
                   orderType: 'sale',
-                  productId: item.productId.toString(),
-                  quantity: item.quantity,
+                  cartItems: [
+                    {
+                      'product_id': item.productId,
+                      'quantity': item.quantity,
+                      'price': item.price,
+                      'type': item.type,
+                      'daily_rent': item.daily_rent,
+                      'rental_days': item.rentalDays,
+                      'start_date': item.startDate,
+                      'end_date': item.endDate,
+                    }
+                  ],
+                  cartTotal: item.price * item.quantity,
                   rentalStartDate: null,
                   rentalEndDate: null,
                 );
@@ -590,7 +629,7 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
 
           if (response['success'] == true) {
             final link = response['redirectTo'];
-            final invoice = response['invoice'];
+            final invoice = response['invoice'].toString();
             final message = response['status'] ?? 'Order placed successfully';
 
             if (selectedPayment == 'online' && link != null && link.isNotEmpty) {
@@ -628,16 +667,18 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
   }
 
   Future<void> _launchURL(String url) async {
-    try {
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      } else {
-        _showErrorDialog('Could not open payment page. Please try again.');
-      }
-    } catch (e) {
-      _showErrorDialog('Error opening payment page: $e');
-    }
+  print('Opening WebView with URL: $url');
+  if (url.isEmpty) {
+    _showErrorDialog('Invalid payment link');
+    return;
   }
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => InAppWebViewScreen(url: url),
+    ),
+  );
+}
 
   void _showSuccessDialog({
     required String message,
@@ -734,3 +775,4 @@ class _CheckoutPaymentPageState extends State<CheckoutPaymentPage> {
     );
   }
 }
+

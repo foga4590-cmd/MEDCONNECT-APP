@@ -110,4 +110,5 @@ class Product {
        reviews: reviewsList,
     );
   }
+  
 }

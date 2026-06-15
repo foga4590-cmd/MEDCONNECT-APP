@@ -22,16 +22,16 @@ class PaymentService {
   /// ✅ إرسال طلب دفع cash إلى API
   static Future<Map<String, dynamic>> placeCashOrder({
     required String orderType, // "sale" أو "rental"
-    required String productId,
-    required int quantity,
+    required List<Map<String, dynamic>> cartItems,
+  required double cartTotal,
     String? rentalStartDate, // تاريخ البداية للحجز (MM/DD/YYYY)
     String? rentalEndDate, // تاريخ النهاية للحجز (MM/DD/YYYY)
   }) async {
     return _sendOrder(
       paymentType: 'cash',
       orderType: orderType,
-      productId: productId,
-      quantity: quantity,
+      cartItems: cartItems,
+      cartTotal: cartTotal,
       rentalStartDate: rentalStartDate,
       rentalEndDate: rentalEndDate,
     );
@@ -40,16 +40,16 @@ class PaymentService {
   /// ✅ إرسال طلب دفع online إلى API
   static Future<Map<String, dynamic>> placeOnlineOrder({
     required String orderType, // "sale" أو "rental"
-    required String productId,
-    required int quantity,
+    required List<Map<String, dynamic>> cartItems,
+    required double cartTotal,
     String? rentalStartDate, // تاريخ البداية للحجز (MM/DD/YYYY)
     String? rentalEndDate, // تاريخ النهاية للحجز (MM/DD/YYYY)
   }) async {
     return _sendOrder(
       paymentType: 'online',
       orderType: orderType,
-      productId: productId,
-      quantity: quantity,
+      cartItems: cartItems,
+      cartTotal: cartTotal,
       rentalStartDate: rentalStartDate,
       rentalEndDate: rentalEndDate,
     );
@@ -59,8 +59,8 @@ class PaymentService {
   static Future<Map<String, dynamic>> _sendOrder({
     required String paymentType,
     required String orderType,
-    required String productId,
-    required int quantity,
+    required List<Map<String, dynamic>> cartItems,
+    required double cartTotal,
     String? rentalStartDate,
     String? rentalEndDate,
   }) async {
@@ -68,8 +68,8 @@ class PaymentService {
       print('🌐 Sending payment request...');
       print('📦 Payment Type: $paymentType');
       print('📦 Order Type: $orderType');
-      print('📦 Product ID: $productId');
-      print('📦 Quantity: $quantity');
+      print('📦 Cart Items: $cartItems');
+      print('📦 Cart Total: $cartTotal');
 
       // ✅ تحميل التوكن إذا لم يكن محمل
       if (_token == null) {
@@ -80,8 +80,8 @@ class PaymentService {
       Map<String, dynamic> requestBody = {
         'payment_type': paymentType.toLowerCase(),
         'order_type': orderType.toLowerCase(),
-        'product_id': productId,
-        'quantity': quantity,
+        'cart_items': cartItems,
+        'cart_total': cartTotal,
       };
 
       // إضافة تواريخ الحجز إذا كان النوع rental

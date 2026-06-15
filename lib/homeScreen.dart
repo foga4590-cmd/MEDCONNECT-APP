@@ -16,6 +16,8 @@ import 'package:medconnect_app/services/search_services.dart';
 import 'package:provider/provider.dart';
 import '../models/Search_model.dart';
 import 'package:medconnect_app/services/cart_services.dart';
+import 'package:shimmer/shimmer.dart';
+
 
 // ---------------------
 // GLOBAL LISTS
@@ -67,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Products variables
   bool _isLoadingProducts = true;
   String? _productsError;
+  bool _isSearchingLoading = false;   // ✅ جديد
 
   final ApiService _apiService = ApiService();
   final CartService cartService = CartService();
@@ -99,40 +102,33 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
   }
-
-  void _startPolling() {
-    _pollTimer = Timer.periodic(Duration(seconds: 60), (timer) {
-      if (mounted) {
-        _forceRefresh = true;
-        _loadProducts(forceRefresh: true).then((_) {
-          _forceRefresh = false;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    _pollTimer?.cancel();
-    _categoriesPollTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _loadProducts({
-    bool loadMore = false,
-    bool forceRefresh = false,
-  }) async {
-    if (ApiService.cachedProducts != null && !forceRefresh && !_forceRefresh) {
-      setState(() {
-        _allProducts = ApiService.cachedProducts!;
-        displayedProducts = List.from(_allProducts);
-        _isLoadingProducts = false;
-        _isLoadingMore = false;
+void _startPolling() {
+  _pollTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+    if (mounted) {
+      _forceRefresh = true;
+      _loadProducts(forceRefresh: true).then((_) {
+        if (mounted) _forceRefresh = false;
       });
-      return;
     }
+  });
+}
+  
+  
 
+  Future<void> _loadProducts({bool loadMore = false, bool forceRefresh = false}) async {
+     if (!mounted) return;
+     if (ApiService.cachedProducts != null && !forceRefresh && !_forceRefresh) {
+    setState(() {
+      _allProducts = ApiService.cachedProducts!;
+      displayedProducts = List.from(_allProducts);
+      _isLoadingProducts = false;
+      _isLoadingMore = false;
+    });
+    return;
+  }
+    
+    
+    
     if (ApiService.token == null) {
       setState(() {
         _productsError = 'Please login first';
@@ -159,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
         page: _currentPage,
         perPage: 10,
       );
-
+if (!mounted) return;
       setState(() {
         if (loadMore) {
           _allProducts.addAll(result['products']);
@@ -177,11 +173,14 @@ class _HomeScreenState extends State<HomeScreen> {
       for (var product in _allProducts) {
         if (product.stock == 0 && product.restockDate != null) {
           final isNotified = await _apiService.isNotified(product.id);
+          if (!mounted) return;
           _notifyStatus[product.id] = isNotified;
         }
       }
+      if (!mounted) return;
       setState(() {});
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _productsError = e.toString();
         _isLoadingProducts = false;
@@ -202,6 +201,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+ if (!mounted) return;
+      if (ApiService.cachedCategories != null && !forceRefresh && !_forceRefreshCategories) {
+        if (!mounted) return;
+    setState(() {
+      _categories = ApiService.cachedCategories!;
+      _isLoadingCategories = false;
+      _categoriesError = null;
+    });
+    return;
+  }
+  
     // ✅ التأكد من وجود توكن
     if (ApiService.token == null) {
       setState(() {
@@ -210,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       return;
     }
-
+if (!mounted) return;
     setState(() {
       _isLoadingCategories = true;
       _categoriesError = null;
@@ -221,12 +231,13 @@ class _HomeScreenState extends State<HomeScreen> {
         page: 1,
         perPage: 10,
       );
-
+if (!mounted) return;
       setState(() {
         _categories = categories;
         _isLoadingCategories = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _categoriesError = e.toString();
         _isLoadingCategories = false;
@@ -246,50 +257,53 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   //######################
 
-  // البحث
-
-  //  void dispose() {
-  //     _searchController.dispose();
-  //     super.dispose();
-  //   }
+ 
   //##################################################################
   // mohamed
   Future<void> _searchProduct(String query) async {
+     if (!mounted) return;
+  setState(() {
+    _isSearchingLoading = true;      // ✅ بدء التحميل
+    isSearching = true;       
+  });
     final result = await SearchService.searchProducts(
       query,
       selectedCategoryId,
     );
-
+ if (!mounted) return;
     if (result['success']) {
+      if (!mounted) return;
       setState(() {
-        searchResults = result['data'];
+        searchResults = result['data'] ;
+         _isSearchingLoading = false;      // ✅ انتهاء التحميل
         isSearching = query.isNotEmpty || selectedCategoryId != null;
       });
     }
   }
 
   Future<void> fetchCategoriesApi() async {
+     if (!mounted) return;
     setState(() {
       isLoadingCategoriesApi = true;
     });
 
     try {
       final result = await CategorySearch.getCategories();
-
+if (!mounted) return;
       setState(() {
         categoriesApi = result;
       });
     } catch (e) {
       print(e);
     }
-
+if (!mounted) return;
     setState(() {
       isLoadingCategoriesApi = false;
     });
   }
   //##################################################################################
   //int _selectedIndex = 0;
-
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -376,50 +390,56 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSearchBar(),
-              const SizedBox(height: 20),
-              
-              isSearching ? _searchResultsApi() : _buildHomeSections(),
-            ],
-          ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+         children: [
+      _buildSearchBar(),
+      const SizedBox(height: 20),
+      if (isSearching && _isSearchingLoading)   // ✅ حالة التحميل
+        _buildSearchSkeleton()
+      else if (isSearching && !_isSearchingLoading)
+        _searchResultsApi(searchResults[0]) // Pass the first search result
+      else
+        _buildHomeSections(),
+    ],
         ),
       ),
     );
   }
 
-  Widget _searchResultsApi() {
-    if (searchResults.isEmpty) {
-      return const Text("No products found");
-    }
+ Widget _searchResultsApi( product) {
+  if (searchResults.isEmpty) {
+    return const Text("No products found");
+  }
 
-    return GridView.builder(
-      itemCount: searchResults.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.60,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemBuilder: (context, index) {
-        final product = searchResults[index];
-        final bool isRentable =
-            product.is_rentable ?? false; // غيّر حسب اسم الخاصية الفعلي
+  return GridView.builder(
+    itemCount: searchResults.length,
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      childAspectRatio: 0.75,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+    ),
+    itemBuilder: (context, index) {
+      final product = searchResults[index];
+      final bool isRentable = product.is_rentable ?? false; 
 
-        return Container(
+      return GestureDetector(
+        onTap: () {
+          
+        },
+        child: Container(
           color: Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Image.network(
-                product.image.isNotEmpty ? product.image[0].image : "",
+                product.image.isNotEmpty ? product.image.first.image : "",
                 height: 120,
                 width: double.infinity,
                 fit: BoxFit.cover,
@@ -429,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
                   product.name,
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
@@ -439,17 +459,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Text(
                   "${product.price} EGP",
-                  style: const TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 8),
               if (isRentable)
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.green,
                     borderRadius: BorderRadius.circular(12),
@@ -459,14 +476,55 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(color: Colors.white, fontSize: 12),
                   ),
                 ),
+              const SizedBox(height: 2),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  //######################################################################################
+        ),
+      );
+    },
+  );
+}
+Widget _buildSearchSkeleton() {
+  return GridView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      childAspectRatio: 0.75,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+    ),
+    itemCount: 4,  // عدد الـ skeletons أثناء التحميل
+    itemBuilder: (context, index) {
+      return Container(
+        color: Colors.white,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ShimmerSkeleton(width: double.infinity, height: 120, borderRadius: BorderRadius.circular(8)),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: ShimmerSkeleton(width: double.infinity, height: 14, borderRadius: BorderRadius.circular(4)),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: ShimmerSkeleton(width: 80, height: 14, borderRadius: BorderRadius.circular(4)),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: ShimmerSkeleton(width: 70, height: 24, borderRadius: BorderRadius.circular(12)),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+//######################################################################################
   Widget _buildSearchBar() {
     return Row(
       children: [
@@ -493,6 +551,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(width: 12),
         InkWell(
           onTap: () {
+            if (!mounted) return;
             setState(() {
               showCategories = !showCategories;
             });
@@ -511,34 +570,48 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
-  //############################################################################################
-  // mohamed
-  void _showCategoriesTopSheet() {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true, // النقر خارج النافذة يغلقها
-      barrierLabel: "Dismiss",
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (context, anim1, anim2) {
-        return Align(
-          alignment: Alignment.topCenter, // تظهر في أعلى المنتصف
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              margin: const EdgeInsets.only(top: 80, left: 20, right: 20),
-              width: MediaQuery.of(context).size.width * 0.9,
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.5,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _pollTimer?.cancel();
+    _categoriesPollTimer?.cancel();
+    super.dispose();
+  }
+//############################################################################################
+// mohamed
+void _showCategoriesTopSheet() {
+  showGeneralDialog(
+    context: context,
+    barrierDismissible: true, // النقر خارج النافذة يغلقها
+    barrierLabel: "Dismiss",
+    transitionDuration: const Duration(milliseconds: 200),
+    pageBuilder: (context, anim1, anim2) {
+      return Align(
+        alignment: Alignment.topCenter, // تظهر في أعلى المنتصف
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            margin: const EdgeInsets.only(top: 80, left: 60, right: 60),
+            width: MediaQuery.of(context).size.width * 0.9,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.5,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: Text(
+                    'Select Category',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ],
               ),
@@ -736,27 +809,18 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget buildCategories() {
     if (_isLoadingCategories) {
       return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(
-            2, // ✅ عدد الـ skeleton categories
-            (index) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Column(
-                children: [
-                  Skeleton(
-                    width: 70,
-                    height: 70,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  const SizedBox(height: 8),
-                  Skeleton(
-                    width: 60,
-                    height: 12,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ],
-              ),
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: List.generate(
+          2, // ✅ عدد الـ skeleton categories
+          (index) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Column(
+              children: [
+                ShimmerSkeleton(width: 70, height: 70, borderRadius: BorderRadius.circular(12)),
+                const SizedBox(height: 8),
+                ShimmerSkeleton(width: 60, height: 12, borderRadius: BorderRadius.circular(4)),
+              ],
             ),
           ),
         ),
@@ -890,68 +954,50 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
-  Widget _skeletonProductCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // صورة
-          Skeleton(
-            width: double.infinity,
-            height: MediaQuery.of(context).size.height * 0.22,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          const SizedBox(height: 8),
-          // اسم المنتج
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Skeleton(
-              width: double.infinity,
-              height: 14,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // اسم المورد
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Skeleton(
-              width: 100,
-              height: 12,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // السعر
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Skeleton(
-              width: 80,
-              height: 14,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const SizedBox(height: 8),
-          // زر
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Skeleton(
-              width: double.infinity,
-              height: 36,
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ),
-    );
-  }
-
+Widget _skeletonProductCard() {
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // صورة
+        ShimmerSkeleton(
+          width: double.infinity,
+          height: MediaQuery.of(context).size.height * 0.22,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        const SizedBox(height: 8),
+        // اسم المنتج
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: ShimmerSkeleton(width: double.infinity, height: 14, borderRadius: BorderRadius.circular(4)),
+        ),
+        const SizedBox(height: 8),
+        // اسم المورد
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: ShimmerSkeleton(width: 100, height: 12, borderRadius: BorderRadius.circular(4)),
+        ),
+        const SizedBox(height: 8),
+        // السعر
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: ShimmerSkeleton(width: 80, height: 14, borderRadius: BorderRadius.circular(4)),
+        ),
+        const SizedBox(height: 8),
+        // زر
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: ShimmerSkeleton(width: double.infinity, height: 36, borderRadius: BorderRadius.circular(8)),
+        ),
+        const SizedBox(height: 8),
+      ],
+    ),
+  );
+}
   // ---------------------
   // PRODUCT CARD
   // ---------------------
@@ -1072,30 +1118,24 @@ class _HomeScreenState extends State<HomeScreen> {
               if (p.stock == 0)
                 Padding(
                   padding: const EdgeInsets.all(7.0),
-                  child: Expanded(
-                    flex: 2,
-                    child: const Text(
-                      " ",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: const Text(
+                    " ",
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               if (p.isRentable && p.stock > 0)
                 Padding(
                   padding: const EdgeInsets.all(7.0),
-                  child: Expanded(
-                    flex: 2,
-                    child: const Text(
-                      "Available for Rent",
-                      style: TextStyle(
-                        color: Color.fromARGB(255, 89, 129, 248),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
+                  child: const Text(
+                    "Available for Rent",
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 89, 129, 248),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
                     ),
                   ),
                 ),
@@ -1443,7 +1483,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 quantity: 1,
                 type: "sale",
               );
-
+if (!mounted) return;
               if (result['success'] != false) {
                 // ✅ ضيفه local برضو لو عايز
                 cartItemsGlobal.add(
@@ -1550,12 +1590,12 @@ class _HomeScreenState extends State<HomeScreen> {
   // }
 }
 
-class Skeleton extends StatelessWidget {
+class ShimmerSkeleton extends StatelessWidget {
   final double width;
   final double height;
   final BorderRadius borderRadius;
 
-  const Skeleton({
+  const ShimmerSkeleton({
     super.key,
     required this.width,
     required this.height,
@@ -1564,13 +1604,19 @@ class Skeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade300,
-        borderRadius: borderRadius,
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      period: const Duration(milliseconds: 1200),
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white, // اللون سيتم تجاوزه بواسطة الـ Shimmer
+          borderRadius: borderRadius,
+        ),
       ),
     );
   }
 }
+

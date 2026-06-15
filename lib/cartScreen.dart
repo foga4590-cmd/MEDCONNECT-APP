@@ -45,6 +45,35 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  Widget _buildCartSkeleton() {
+  return ListView.builder(
+    itemCount: 4, // عدد العناصر الظاهرة أثناء التحميل
+    itemBuilder: (context, index) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        child: Row(
+          children: [
+            Skeleton(width: 80, height: 80, borderRadius: BorderRadius.circular(8)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Skeleton(width: double.infinity, height: 16, borderRadius: BorderRadius.circular(4)),
+                  const SizedBox(height: 8),
+                  Skeleton(width: 100, height: 14, borderRadius: BorderRadius.circular(4)),
+                  const SizedBox(height: 8),
+                  Skeleton(width: 80, height: 14, borderRadius: BorderRadius.circular(4)),
+                ],
+              ),
+            ),
+            Skeleton(width: 40, height: 40, borderRadius: BorderRadius.circular(20)),
+          ],
+        ),
+      );
+    },
+  );
+}
   final CartService cartService = CartService();
 List<CartItem> cartItemsGlobal = [];
   bool isLoading = true;
@@ -168,12 +197,11 @@ List<CartItem> cartItemsGlobal = [];
       ),
       backgroundColor: const Color(0xFFF4F4F4),
 
-      body: (isLoading)
-          ? Center(child: CircularProgressIndicator())
-          : cartItemsGlobal.isEmpty
-          ? const Center(
-              child: Text("Your cart is empty", style: TextStyle(fontSize: 16)),
-            )
+     // داخل CartScreen
+body: isLoading
+    ? _buildCartSkeleton()   // ✅ استبدال الـ CircularProgressIndicator
+    : cartItemsGlobal.isEmpty
+        ? const Center(child: Text("Your cart is empty", style: TextStyle(fontSize: 16)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -544,4 +572,29 @@ double total = subtotal; // + أي رسوم إضافية إذا كانت موج�
     );
   }
 
+}
+
+class Skeleton extends StatelessWidget {
+  final double width;
+  final double height;
+  final BorderRadius borderRadius;
+
+  const Skeleton({
+    super.key,
+    required this.width,
+    required this.height,
+    this.borderRadius = const BorderRadius.all(Radius.circular(12)),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: borderRadius,
+      ),
+    );
+  }
 }

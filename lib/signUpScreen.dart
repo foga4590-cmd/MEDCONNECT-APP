@@ -241,11 +241,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         children: [
           // Header
           Container(
-            height: 100,
+            height: 50,
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(colors: [Color(0xFF0066FF), Color(0xFF0088FF)]),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(50)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(10)),
             ),
             child: SafeArea(
               child: Padding(
