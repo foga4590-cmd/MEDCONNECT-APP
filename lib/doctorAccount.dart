@@ -9,6 +9,7 @@ import 'package:medconnect_app/doctorProfile.dart';
 import 'package:medconnect_app/models/order_model.dart';
 import 'package:medconnect_app/order_details.dart';
 import 'package:medconnect_app/services/order_services.dart';
+import 'package:medconnect_app/services/Get_doctor_profile.dart';
 //import 'package:medconnect_app/Screens/homeScreen.dart';
 
  
@@ -29,10 +30,15 @@ import 'package:medconnect_app/services/order_services.dart';
 
 
 // ================= SCREEN =================
-class doctorAccountPage extends StatelessWidget {
+class doctorAccountPage extends StatefulWidget {
   
    doctorAccountPage({super.key});
 
+
+  @override
+  State<doctorAccountPage> createState() => _doctorAccountPageState();
+}
+class _doctorAccountPageState extends State<doctorAccountPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,12 +61,31 @@ class doctorAccountPage extends StatelessWidget {
 }
 
 // ================= HEADER =================
-class DashboardHeader extends StatelessWidget {
- 
-  const DashboardHeader({
-    super.key,
-    
-  });
+class DashboardHeader extends StatefulWidget {
+  const DashboardHeader({super.key});
+
+  @override
+  State<DashboardHeader> createState() => _DashboardHeaderState();
+}
+
+class _DashboardHeaderState extends State<DashboardHeader> {
+  String doctorFullName = 'Doctor';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDoctorName();
+  }
+
+  Future<void> _loadDoctorName() async {
+    final result = await GetDoctorProfile.doctorProfile();
+    if (result['success']) {
+      final fullname = result['data']['fullname'] ?? 'Doctor';
+      setState(() {
+        doctorFullName = fullname;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,34 +108,26 @@ class DashboardHeader extends StatelessWidget {
                   );
                 },
               ),
-
-           CircleAvatar(
-            radius: 24,
-   child:IconButton(
-    icon: const Icon(Icons.person, color: Colors.black),
-    onPressed: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>  const DoctorProfilePage(
-           
-          ) ,
-        ),
-      );
-    },
-  ),
-          ),      
-
-             
-                
-               
-              
+              CircleAvatar(
+                radius: 24,
+                child: IconButton(
+                  icon: const Icon(Icons.person, color: Colors.black),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DoctorProfilePage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            "Good morning, Dr. Emily",
-            style: TextStyle(
+          Text(
+            'Good morning, $doctorFullName!',
+            style: const TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,

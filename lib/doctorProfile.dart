@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:medconnect_app/services/Get_Doctor_Profile.dart';
 import 'package:medconnect_app/doctorAccount.dart';
+import 'package:medconnect_app/forgotPasswordScreen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -58,14 +59,15 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   int _selectedIndex = 3; // Profile is selected
 
   // Address field that can be edited
-String fullname = '';
-String email = '';
-String phone = '';
-String licenseNumber = '';
-String address = '';
-String governorate = '';
-String issueAuthority = '';
-bool isLoading = true;
+  String fullname = '';
+  String email = '';
+  String phone = '';
+  String licenseNumber = '';
+  String address = '';
+  String governorate = '';
+  String issueAuthority = '';
+  String profileImageUrl = '';
+  bool isLoading = true;
 
 
 
@@ -84,6 +86,7 @@ bool isLoading = true;
         address = data['address'] ?? '';
         governorate = data['governorate'] ?? '';
         issueAuthority = data["doctor"]["doctor_license"]['issue_authority'] ?? '';
+        profileImageUrl = data["doctor"]['profile_image_url'] ?? '';
 
         isLoading = false;
       });
@@ -98,6 +101,7 @@ void initState() {
   super.initState();
   getProfileData(); // 👈 دي أهم سطر
 }
+
   @override
   Widget build(BuildContext context) {
     
@@ -252,71 +256,75 @@ void initState() {
     return Center(
       child: Column(
         children: [
-          // Profile Image with Edit Button
-          Stack(
-            children: [
-              Container(
-                width: 128,
-                height: 128,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [Colors.grey[700]!, Colors.grey[800]!]
-                        : [const Color(0xFFDBEAFE), const Color(0xFFEFF6FF)],
-                  ),
-                  border: Border.all(
-                    color: isDark ? Colors.grey[800]! : Colors.white,
-                    width: 4,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.person,
-                    size: 64,
-                    color: isDark
-                        ? Colors.white.withOpacity(0.4)
-                        : colorScheme.primary.withOpacity(0.4),
-                  ),
-                ),
+          // Profile Image
+          Container(
+            width: 128,
+            height: 128,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isDark ? Colors.grey[800]! : Colors.white,
+                width: 4,
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondary,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark ? Colors.grey[800]! : Colors.white,
-                      width: 2,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: profileImageUrl.isNotEmpty
+                ? ClipOval(
+                    child: Image.network(
+                      profileImageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: isDark
+                                  ? [Colors.grey[700]!, Colors.grey[800]!]
+                                  : [const Color(0xFFDBEAFE), const Color(0xFFEFF6FF)],
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.person,
+                              size: 64,
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.4)
+                                  : colorScheme.primary.withOpacity(0.4),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                  )
+                : Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDark
+                            ? [Colors.grey[700]!, Colors.grey[800]!]
+                            : [const Color(0xFFDBEAFE), const Color(0xFFEFF6FF)],
                       ),
-                    ],
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.person,
+                        size: 64,
+                        color: isDark
+                            ? Colors.white.withOpacity(0.4)
+                            : colorScheme.primary.withOpacity(0.4),
+                      ),
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.edit,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
           ),
           const SizedBox(height: 16),
           Text(
@@ -555,15 +563,14 @@ void initState() {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Change password feature coming soon'),
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        },
+       onTap: () {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ForgotPasswordScreen(isChangePassword: true),
+    ),
+  );
+},
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(16),

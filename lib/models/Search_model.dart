@@ -6,12 +6,14 @@ class ProductModel {
   final double price;
   final bool? is_rentable;
   final List<ProductImage> image;
+  final int? id; // Add the id field
 
   ProductModel({
     required this.name,
     required this.price,
     required this.is_rentable,
     required this.image,
+    required this.id, // Initialize the id field
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +30,7 @@ class ProductModel {
       price: double.tryParse(json['price'].toString()) ?? 0.0,
       is_rentable: json['is_rentable'] ?? false,
       image: imageList,
+      id: json['id'] ?? 0,
     );
   }
 }
