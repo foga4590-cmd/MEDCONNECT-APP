@@ -603,18 +603,7 @@ void _showCategoriesTopSheet() {
                 BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 4))
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  child: Text(
-                    'Select Category',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                ],
-              ),
+           
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -824,6 +813,7 @@ void _showCategoriesTopSheet() {
             ),
           ),
         ),
+      ),
       );
       // return const Center(
       //   child: Padding(
