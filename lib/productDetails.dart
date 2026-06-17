@@ -450,53 +450,53 @@ void _showCreateListFirstDialog(Product product) async {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
+                  // Expanded(
+                  //   child: SizedBox(
+                  //     height: 40,
+                  //     child: ElevatedButton.icon(
+                  //       onPressed: () {
+                  //         wishlistProvider.toggleWishlist(_product!.id);
+                  //         ScaffoldMessenger.of(context).showSnackBar(
+                  //           SnackBar(
+                  //             content: Text(
+                  //               wishlistProvider.isInWishlist(_product!.id)
+                  //                   ? "Added to wishlist"
+                  //                   : "Removed from wishlist",
+                  //             ),
+                  //             duration: const Duration(seconds: 1),
+                  //           ),
+                  //         );
+                  //       },
+                  //       icon: Icon(
+                  //         isInWishlist ? Icons.favorite : Icons.favorite_border,
+                  //         color: isInWishlist ? Colors.red : Colors.black,
+                  //       ),
+                  //       label: Text(
+                  //         "Wishlist",
+                  //         style: TextStyle(
+                  //           color: isInWishlist ? Colors.red : Colors.black,
+                  //         ),
+                  //       ),
+                  //       style: ElevatedButton.styleFrom(
+                  //         backgroundColor: Colors.white,
+                  //         side: BorderSide(color: Colors.grey.shade300),
+                  //         shape: RoundedRectangleBorder(
+                  //           borderRadius: BorderRadius.circular(8),
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  // const SizedBox(width: 12),
                   Expanded(
                     child: SizedBox(
-                      height: 40,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          wishlistProvider.toggleWishlist(_product!.id);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                wishlistProvider.isInWishlist(_product!.id)
-                                    ? "Added to wishlist"
-                                    : "Removed from wishlist",
-                              ),
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
-                        },
-                        icon: Icon(
-                          isInWishlist ? Icons.favorite : Icons.favorite_border,
-                          color: isInWishlist ? Colors.red : Colors.black,
-                        ),
-                        label: Text(
-                          "Wishlist",
-                          style: TextStyle(
-                            color: isInWishlist ? Colors.red : Colors.black,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: BorderSide(color: Colors.grey.shade300),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SizedBox(
-                      height: 40,
+                      height: 35,
                       child: ElevatedButton.icon(
                       
                     onPressed: () => _showAddToListDialog(_product!),
 
                         icon: Icon(
-                          Icons.bookmark_border,
+                          Icons.playlist_add,
                           color: isInEquipmentList ? Colors.blue : Colors.black,
                         ),
                         label: Text(
@@ -1098,9 +1098,12 @@ Widget _buildQuantitySelector() {
             );
           }).toList()
         else
-          const Text(
-            "No specifications available",
-            style: TextStyle(color: Colors.grey),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: const Text(
+              "No specifications available",
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
 
         // // باقي البيانات (الضمان، مدة التجهيز، الكمية)

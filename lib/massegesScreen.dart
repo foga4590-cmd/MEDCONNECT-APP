@@ -39,21 +39,21 @@ class _MessagesScreenState extends State<MessagesScreen> {
   bool _loading = true;
   String? _error;
   List<int> _conversationIds = [];
- Timer? _refreshTimer; 
+ //Timer? _refreshTimer; 
 
   @override
   void initState() {
     super.initState();
     _fetchConversations();
     filteredChats = _chats;
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if(mounted) _fetchConversations();
-    });
+    // _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    //   if(mounted) _fetchConversations();
+    // });
   }
   @override
   void dispose() {
     
-    _refreshTimer?.cancel();
+    //_refreshTimer?.cancel();
     super.dispose();
   }
   Future<void> _fetchConversations() async {
@@ -222,7 +222,13 @@ class _MessagesScreenState extends State<MessagesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("My Supplier Chats")),
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF101C22)
+          : const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text("Supplier Chats"),
+        backgroundColor: Colors.white,
+        ),
       body: Column(
         children: [
           // 🔎 Search Bar
@@ -250,6 +256,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
           // 📋 Chat List
           Expanded(
             child: ListView.builder(
+              
               itemCount: filteredChats.length,
               itemBuilder: (context, index) {
                 final chat = filteredChats[index];
@@ -259,7 +266,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                     children: [
                       const CircleAvatar(
                         radius: 25,
-                        backgroundColor: Color.fromARGB(255, 236, 232, 232),
+                        backgroundColor: Color.fromARGB(255, 232, 232, 236),
                       ),
 
                       if (chat.isOnline)
@@ -316,7 +323,6 @@ class _MessagesScreenState extends State<MessagesScreen> {
                   trailing: Text(chat.time),
                   onTap: () {
                     final id = _conversationIds[index];
-                    if (id == null) return;
                     
                     final shouldRefrech = Navigator.push(
                       context,

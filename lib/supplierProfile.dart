@@ -4,10 +4,10 @@ import 'package:medconnect_app/core/app_colorSupplier.dart';
 import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/productDetails.dart';
-import 'package:medconnect_app/providers/wishlist_provider.dart';
+//import 'package:medconnect_app/providers/wishlist_provider.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/services/cart_services.dart';
-import 'package:provider/provider.dart';
+//import 'package:provider/provider.dart';
 
 class SupplierProfileScreen extends StatefulWidget {
   final int supplierId;
@@ -196,12 +196,14 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
           children: [
             _topBar(context),
 
+
             // في build، بعد الـ AppBar وقبل الـ Expanded
             Expanded(
               child: SingleChildScrollView(
                 controller: _scrollController,
                 child: Column(
                   children: [
+                    const SizedBox(height: 6),
                     _supplierHeader(),
                     _aboutSection(),
                     _achievements(),
@@ -224,7 +226,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: AppColors.backgroundLight,
+        color: Colors.white,
         border: Border(bottom: BorderSide(color: Colors.black12)),
       ),
       child: Row(
@@ -240,7 +242,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          const SizedBox(width: 40),
+          //const SizedBox(height: 4),
         ],
       ),
     );
@@ -518,14 +520,15 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
       ],
     );
   }
+  final CartService _cartService = CartService();
 
   Widget _productCard(Product product) {
     print('🃏 Product card: ${product.id} - ${product.name}');
 
     bool isOutOfStock = product.stock == 0;
-    final wishlistProvider = context.watch<WishlistProvider>();
+    //final wishlistProvider = context.watch<WishlistProvider>();
 
-    final isInWishlist = wishlistProvider.isInWishlist(product.id);
+   // final isInWishlist = wishlistProvider.isInWishlist(product.id);
 
     return GestureDetector(
       onTap: () {
@@ -591,42 +594,115 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
                       "Out of Stock",
                       style: TextStyle(color: Colors.red, fontSize: 12),
                     ),
+                   if (product.isRentable && product.stock > 0)
+                    const Text(
+                      "available for rent",
+                      style: TextStyle(color: Colors.blue, fontSize: 12),
+                    ),
+
+
+
                 ],
               ),
             ),
 
-            Column(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        isInWishlist ? Icons.favorite : Icons.favorite_border,
-                        color: isInWishlist ? Colors.red : Colors.grey,
+            if (product.stock == 0 && product.restockDate != null)
+                      IconButton(
+                        icon: const Icon(Icons.notifications_active, color: Colors.black),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("We'll notify you when available"),
+            ),
+                          );
+                        },
                       ),
-                      onPressed: () {
-                        wishlistProvider.toggleWishlist(product.id);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              wishlistProvider.isInWishlist(product.id)
-                                  ? "${product.name} removed from wishlist"
-                                  : "${product.name} added to wishlist",
-                            ),
-                            duration: const Duration(seconds: 1),
-                          ),
-                        );
-                      },
-                    ),
-                    //// equipment list botton
-                    IconButton(
-                      icon: Icon(Icons.bookmark_border),
-                      onPressed: () {},
-                    ),
-                  ],
+                
+             const SizedBox(width: 6),
+                    if (product.stock > 0)
+                    
+                      IconButton(
+                        icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
+                        onPressed: () async {  //there is change by mohamed
+                          final result = await _cartService.addToCart(
+            productId: product.id,
+            quantity: 1,
+            type: "sale",
+                          );
+            
+                          if (result['success'] != false) {
+            // ✅ ضيفه local برضو لو عايز
+            cartItemsGlobal.add(
+              CartItem(
+                daily_rent: 0,
+                name: product.name,
+                image: product.imagePath,
+                quantity: 1,
+                price: product.price,
+                type: 'sale',
+                dateRange: '',
+                id: product.id,
+                productId: product.id,
+              ),
+            );
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("${product.name} added to cart ✅"),
+                duration: const Duration(seconds: 2),
+              backgroundColor: Colors.blue,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              action: SnackBarAction(
+                label: "View Cart",
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => CartPage()),
+                  );
+                },
+              ),
+              
+              
+              ),
+            );
+                          } else { //there is change by mohamed
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(result['message'] ?? "Error")),
+            );
+                          }
+                        },
+                      
+                      ),    // IconButton(
+                //   icon: Icon(
+                //     isInWishlist ? Icons.favorite : Icons.favorite_border,
+                //     color: isInWishlist ? Colors.red : Colors.grey,
+                //   ),
+                //   onPressed: () {
+                //     wishlistProvider.toggleWishlist(product.id);
+                //     ScaffoldMessenger.of(context).showSnackBar(
+                //       SnackBar(
+                //         content: Text(
+                //           wishlistProvider.isInWishlist(product.id)
+                //               ? "${product.name} removed from wishlist"
+                //               : "${product.name} added to wishlist",
+                //         ),
+                //         duration: const Duration(seconds: 1),
+                //       ),
+                //     );
+                //   },
+                // ),
+                //// equipment list botton
+                IconButton(
+                  icon: Icon(Icons.playlist_add, color: Colors.grey[700]),
+                  onPressed: () {},
                 ),
-
-                _buildProductButton(product),
               ],
             ),
           ],
@@ -634,137 +710,141 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
       ),
     );
   }
-final CartService _cartService = CartService();
-  Widget _buildProductButton(Product product) {
-    // if (product.stock == 0 && product.restockDate == null) {
-    //   return ElevatedButton(
-    //     onPressed: null,
 
-    //     style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-    //     child: const Text(
-    //       "Out of Stock",
-    //       style: TextStyle(color: Colors.white),
-    //     ),
-    //   );
-    //  }
+  // Widget _buildProductButton(Product product) {
+  //   // if (product.stock == 0 && product.restockDate == null) {
+  //   //   return ElevatedButton(
+  //   //     onPressed: null,
 
-    // if (product.stock == 0 && product.restockDate != null) {
-    //   return ElevatedButton(
-    //     onPressed: () {
-    //       ScaffoldMessenger.of(context).showSnackBar(
-    //         const SnackBar(content: Text("We'll notify you when available")),
-    //       );
-    //     },
-    //     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-    //     child: const Text("Notify Me", style: TextStyle(color: Colors.black)),
-    //   );
-    // }
+  //   //     style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+  //   //     child: const Text(
+  //   //       "Out of Stock",
+  //   //       style: TextStyle(color: Colors.white),
+  //   //     ),
+  //   //   );
+  //   //  }
 
-    return Column(
-      children: [
-        if (product.stock == 0 && product.restockDate == null)
-          ElevatedButton(
-            onPressed: null,
+  //   // if (product.stock == 0 && product.restockDate != null) {
+  //   //   return ElevatedButton(
+  //   //     onPressed: () {
+  //   //       ScaffoldMessenger.of(context).showSnackBar(
+  //   //         const SnackBar(content: Text("We'll notify you when available")),
+  //   //       );
+  //   //     },
+  //   //     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+  //   //     child: const Text("Notify Me", style: TextStyle(color: Colors.black)),
+  //   //   );
+  //   // }
 
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-            child: const Text(
-              "Out of Stock",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        if (product.stock == 0 && product.restockDate != null)
-          ElevatedButton(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("We'll notify you when available"),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
-            child: const Text(
-              "Notify Me",
-              style: TextStyle(color: Colors.black),
-            ),
-          ),
+  //   return Column(
+  //     children: [
+  //       // if (product.stock == 0 && product.restockDate == null)
+  //       //   ElevatedButton(
+  //       //     onPressed: null,
 
-        if (product.isRentable && product.stock > 0)
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.white70),
-            onPressed: () {},
-            child: const Text("Rent", style: TextStyle(color: Colors.blue)),
-          ),
-        const SizedBox(height: 6),
-        if (product.stock > 0)
+  //       //     style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+  //       //     child: const Text(
+  //       //       "Out of Stock",
+  //       //       style: TextStyle(color: Colors.white),
+  //       //     ),
+  //       //   ),
+  //       if (product.stock == 0 && product.restockDate != null)
+  //         IconButton(
+  //           icon: const Icon(Icons.notifications, color: Colors.amber),
+  //           onPressed: () {
+  //             ScaffoldMessenger.of(context).showSnackBar(
+  //               const SnackBar(
+  //                 content: Text("We'll notify you when available"),
+  //               ),
+  //             );
+  //           },
+  //          // style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+  //           // child: const Text(
+  //           //   "Notify Me",
+  //           //   style: TextStyle(color: Colors.black),
+  //           // ),
+  //         ),
+
+  //      // if (product.isRentable && product.stock > 0)
+
+  //         // ElevatedButton(
+  //         //   style: ElevatedButton.styleFrom(backgroundColor: Colors.white70),
+  //         //   onPressed: () {},
+  //         //   child: const Text("Rent", style: TextStyle(color: Colors.blue)),
+  //         // ),
+  //       const SizedBox(height: 6),
+  //       if (product.stock > 0)
         
-          ElevatedButton(
-            onPressed: () async {  //there is change by mohamed
-              final result = await _cartService.addToCart(
-                productId: product.id,
-                quantity: 1,
-                type: "sale",
-              );
+  //         IconButton(
+  //           icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
+  //           onPressed: () async {  //there is change by mohamed
+  //             final result = await _cartService.addToCart(
+  //               productId: product.id,
+  //               quantity: 1,
+  //               type: "sale",
+  //             );
 
-              if (result['success'] != false) {
-                // ✅ ضيفه local برضو لو عايز
-                cartItemsGlobal.add(
-                  CartItem(
-                    daily_rent: 0,
-                    name: product.name,
-                    image: product.imagePath,
-                    quantity: 1,
-                    price: product.price,
-                    type: 'sale',
-                    dateRange: '',
-                    id: product.id,
-                    productId: product.id,
-                  ),
-                );
+  //             if (result['success'] != false) {
+  //               // ✅ ضيفه local برضو لو عايز
+  //               cartItemsGlobal.add(
+  //                 CartItem(
+  //                   daily_rent: 0,
+  //                   name: product.name,
+  //                   image: product.imagePath,
+  //                   quantity: 1,
+  //                   price: product.price,
+  //                   type: 'sale',
+  //                   dateRange: '',
+  //                   id: product.id,
+  //                   productId: product.id,
+  //                 ),
+  //               );
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("${product.name} added to cart ✅"),
-                    duration: const Duration(seconds: 2),
-                  backgroundColor: Colors.blue,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  action: SnackBarAction(
-                    label: "View Cart",
-                    textColor: Colors.white,
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => CartPage()),
-                      );
-                    },
-                  ),
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 SnackBar(
+  //                   content: Text("${product.name} added to cart ✅"),
+  //                   duration: const Duration(seconds: 2),
+  //                 backgroundColor: Colors.blue,
+  //                 behavior: SnackBarBehavior.floating,
+  //                 shape: RoundedRectangleBorder(
+  //                   borderRadius: BorderRadius.circular(12),
+  //                 ),
+  //                 action: SnackBarAction(
+  //                   label: "View Cart",
+  //                   textColor: Colors.white,
+  //                   onPressed: () {
+  //                     Navigator.push(
+  //                       context,
+  //                       MaterialPageRoute(builder: (_) => CartPage()),
+  //                     );
+  //                   },
+  //                 ),
                   
                   
-                  ),
-                );
-              } else { //there is change by mohamed
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(result['message'] ?? "Error")),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            child: const Text(
-              "Add to Cart",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-      ],
-    );
+  //                 ),
+  //               );
+  //             } else { //there is change by mohamed
+  //               ScaffoldMessenger.of(context).showSnackBar(
+  //                 SnackBar(content: Text(result['message'] ?? "Error")),
+  //               );
+  //             }
+  //           },
+  //         // style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+  //          //  child: Icon( Icons.shopping_cart, color: Colors.black),
+  //           //const Text(
+  //           //   "Add to Cart",
+  //           //   style: TextStyle(color: Colors.white),
+  //           // ),
+  //         ),
+  //     ],
+  //   );
 
-    // return ElevatedButton(
-    //   onPressed: () {},
-    //   style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-    //   child: const Text("buy", style: TextStyle(color: Colors.white)),
-    // );
-  }
+  //   // return ElevatedButton(
+  //   //   onPressed: () {},
+  //   //   style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+  //   //   child: const Text("buy", style: TextStyle(color: Colors.white)),
+  //   // );
+  // }
 
   // ---------------- COMMON CARD ----------------
   Widget _card({required String title, required Widget child}) {

@@ -15,6 +15,7 @@ import 'package:medconnect_app/models/custom_request_model.dart';
 import 'package:medconnect_app/models/offer_request.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/models/review.dart';
+//import 'package:medconnect_app/services/pusher_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
@@ -115,6 +116,8 @@ static void clearCache() {
         print('✅ Login success - status 200');
         print('📦 Data: ${data['data']}');
 
+
+      //await PusherService().init(data['token']);
         // تخزين التوكن
         if (data['data'] != null && data['token'] != null) {
           print('💾 Found token: ${data['token']}');

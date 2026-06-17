@@ -441,6 +441,17 @@ class _EquipmentListsScreenState extends State<EquipmentListsScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
+        leading: IconButton(
+    icon: const Icon(Icons.arrow_back_ios_new),
+    onPressed: () {  //new modification 
+       Navigator.push(
+        context,
+        MaterialPageRoute(
+         builder: (context) => const MainScreen(),
+        ),
+      );
+    },
+        ),
 
         actions: [
           IconButton(
