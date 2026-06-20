@@ -330,6 +330,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         builder: (_) => ChatScreen(
                           chatName: chat.name,
                           conversationId: id,
+                          receiverId: id, // ممكن تحتاجي ID المورد مش المحادثة
                         ),
                       ),
                     );

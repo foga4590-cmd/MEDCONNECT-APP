@@ -23,11 +23,13 @@ class ChatMessage {
 class ChatScreen extends StatefulWidget {
   final String chatName;
   final int? conversationId;
+  final int receiverId; // هتحتاجيها عشان تبعتي رسالة
 
   const ChatScreen({
     super.key,
     required this.chatName,
     required this.conversationId,
+    required this.receiverId,
   });
 
   @override
@@ -188,24 +190,39 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
-    // final tempId = DateTime.now().millisecondsSinceEpoch;
-    // setState(() {
-    //   _messages.add(
-    //     ChatMessage(
-    //       id: tempId,
-    //       text: text,
-    //       type: 'text',
-    //       time: DateTime.now(),
-    //       isMe: true,
-    //     ),
-    //   );
-    // });
+    final tempId = DateTime.now().millisecondsSinceEpoch;
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          id: tempId,
+          text: text,
+          type: 'text',
+          time: DateTime.now(),
+          isMe: true,
+        ),
+      );
+    });
     _controller.clear();
     try {
-      final newMsg = await _api.sendMessage(
-        receiverId: 30001, // هنا هتحتاجي الـ supplier id
-        message: text,
-      );
+       final response = await _api.sendMessage(
+      receiverId: widget.receiverId, // ✅ من الـ widget
+      message: text,
+    );
+
+    final newMsg = response['message'];
+    final conv = response['conversation'];
+
+    // ✅ لو أول رسالة، ناخد conversationId
+    if (conversationId == null && conv != null) {
+      setState(() {
+        conversationId = conv['id'];
+      });
+      _startPolling(); // ✅ نبدأ نسمع رسائل جديدة
+    }
+      // final newMsg = await _api.sendMessage(
+      //   receiverId: 30001, // هنا هتحتاجي الـ supplier id
+      //   message: text,
+      // );
       //setState(() {
         // final index = _messages.indexWhere((m) => m.id == tempId);
         // if (index != -1) {
@@ -219,18 +236,31 @@ class _ChatScreenState extends State<ChatScreen> {
       //   }
       // });
       setState(() {
-        _messages.add(ChatMessage(
+      final index = _messages.indexWhere((m) => m.id == tempId);
+      if (index != -1) {
+        _messages[index] = ChatMessage(
           id: newMsg['id'],
           text: text,
           type: 'text',
           time: DateTime.now(),
           isMe: true,
-        ));
-      });
-       _controller.clear();
-      Navigator.pop(context, true);
+        );
+      }
+    });
+      // setState(() {
+      //   _messages.add(ChatMessage(
+      //     id: newMsg['id'],
+      //     text: text,
+      //     type: 'text',
+      //     time: DateTime.now(),
+      //     isMe: true,
+      //   ));
+      // });
+      //  _controller.clear();
+      // Navigator.pop(context, true);
     } catch (e) {
       print(e);
+      
       // setState(() {
       //   _messages.removeWhere((m) => m.id == tempId);
       // });

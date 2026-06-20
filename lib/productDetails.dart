@@ -49,12 +49,16 @@ List<Review> get reviews => _product?.reviews ?? [];
   Future<void> _loadProduct() async {
     // لو المنتج جاي من HomeScreen (مش محتاج API)
     if (widget.product != null) {
-      setState(() {
+      if (mounted) {
+         setState(() {
         _product = widget.product;
         isLoading = false;
       });
-    }
+      }
+    
   await _checkNotificationStatus();
+  return; // ✅ رجوع عشان ما ينفذش الكود اللي بعده
+  }
     // // لو محتاجين نجيب من API
     // setState(() {
     //   _isLoading = true;
@@ -64,6 +68,7 @@ List<Review> get reviews => _product?.reviews ?? [];
     try {
       final freshproduct = await _apiService.fetchProductById(widget.productId);
       final reviews = await _apiService.getProductReviews(widget.productId);
+
     reviews.sort((a, b) => b.createdAt.compareTo(a.createdAt)); // الأحدث أولاً
       final updatedReviews = reviews.map((r){
         return Review(id: r.id,
@@ -81,7 +86,7 @@ List<Review> get reviews => _product?.reviews ?? [];
 
 
       }).toList();
-
+if (mounted) {
       setState(() {
         _product = freshproduct;
         _product = Product(
@@ -105,14 +110,18 @@ List<Review> get reviews => _product?.reviews ?? [];
       );
         isLoading = false;
       });
+}
 
  await _checkNotificationStatus();
 
     } catch (e) {
+      if (mounted) {
       setState(() {
         _error = e.toString();
         isLoading = false;
       });
+
+      }
     }
   }
 
@@ -186,13 +195,13 @@ Future<void> _rentNow() async {
     final rentalItem = RentalItem(
       productId: _product!.id,
       name: _product!.name,
-      price: _product!.price,
+      price: _product!.dailyRent  ?? 0.0,
       image: _product!.imagePath,
       quantity: rentQuantity,
       startDate: formatDate(rentStartDate!),
       endDate: formatDate(rentEndDate!),
     );
-
+    print('Rent validated, navigating to checkout,$rentalItem');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -388,11 +397,11 @@ void _showCreateListFirstDialog(Product product) async {
         body: const Center(child: Text('Product not found')),
       );
     }
-    final wishlistProvider = Provider.of<WishlistProvider>(
-      context,
-      listen: true,
-    );
-    final isInWishlist = wishlistProvider.isInWishlist(_product!.id);
+    // final wishlistProvider = Provider.of<WishlistProvider>(
+    //   context,
+    //   listen: true,
+    // );
+    // final isInWishlist = wishlistProvider.isInWishlist(_product!.id);
     return Scaffold(
       backgroundColor: const Color(0xffF5F5F5),
       appBar: AppBar(
@@ -829,14 +838,16 @@ void _showCreateListFirstDialog(Product product) async {
         const SizedBox(height: 16),
         locationAndSetupTime(),
         const Divider(),
-        _priceRow("Daily Rate", "\$50 / Day"),
-        _priceRow("Security Deposit", "\$200"),
-        const SizedBox(height: 8),
+        _priceRow("Daily Rent", "\$${_product!.dailyRent?.toStringAsFixed(2) ?? '0.00'}"),
+
+       // _priceRow("Security Deposit", "\$${(_product!.price * .2).toStringAsFixed(0)}"),
+       // const SizedBox(height: 8),
         _priceRow(
           "Total Rent",
-          rentDays == 0
-              ? "\$0.00"
-              : "\$${(rentDays * 50 + 200).toStringAsFixed(2)}",
+          "\$${(rentDays * rentQuantity * (_product!.dailyRent ?? 0.0)).toStringAsFixed(2)}",
+          // rentDays == 0
+          //     ? "\$0.00"
+          //     : "\$${(rentDays * 50 + 200).toStringAsFixed(2)}",
           bold: true,
         ),
       ],

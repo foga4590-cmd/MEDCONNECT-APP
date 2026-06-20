@@ -103,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 void _startPolling() {
-  _pollTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+  _pollTimer = Timer.periodic(Duration(seconds: 60), (timer) {
     if (mounted) {
       _forceRefresh = true;
       _loadProducts(forceRefresh: true).then((_) {
@@ -1255,6 +1255,7 @@ Widget _skeletonProductCard() {
         _showCreateNewListDialog(product);
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$e")));
     }
   }
@@ -1290,6 +1291,7 @@ Widget _skeletonProductCard() {
           const SnackBar(content: Text("List created and item added")),
         );
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("$e")));
@@ -1342,6 +1344,7 @@ Widget _skeletonProductCard() {
           const SnackBar(content: Text("List created and item added")),
         );
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("$e")));

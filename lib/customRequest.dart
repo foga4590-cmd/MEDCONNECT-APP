@@ -305,7 +305,7 @@ Widget datePickerField({
               controller: budgetController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                prefixText: "USD ",
+                prefixText: "EGP ",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
