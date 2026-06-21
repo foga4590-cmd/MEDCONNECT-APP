@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/acceptedSupplier.dart';
+import 'package:medconnect_app/chatScreen.dart';
 import 'package:medconnect_app/core/app_colorResponse.dart';
 import 'package:medconnect_app/models/offer_request.dart';
 //import 'package:medconnect_app/models/offer_request.dart';
@@ -346,7 +347,7 @@ Widget _pendingButtons(BuildContext context) {
         Expanded(
           child: OutlinedButton(
             onPressed: () {
-              // TODO: فتح شات مع المورد
+              _navigateToChat(context);// TODO: فتح شات مع المورد
             },
             child: const Text("Chat"),
           ),
@@ -370,7 +371,31 @@ Widget _pendingButtons(BuildContext context) {
       ],
     );
   }
-
+Future<void> _navigateToChat(BuildContext context) async {
+  // ✅ اسم المورد (الشركة)
+  final supplierName = widget.offer.supplier.companyName;
+  //final supplierId = widget.offer.supplier.id; // ممكن نحتاجها في المستقبل
+  // ✅ conversationId = offer.id (أو نحتاج نجيب conversationId من API)
+  // بما إن الـ Chat يستخدم conversationId، نحتاج نجيبها
+  // لكن مؤقتاً هنستخدم offer.id كـ conversationId
+  //final conversationId = await ApiService().getConversationIdWithSupplier(supplierId); // أو نجيبها من API
+  //if(conversationId != null){
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => ChatScreen(
+        chatName: supplierName,
+        conversationId: null,
+        receiverId: widget.offer.supplier.id,
+      ),
+    ),
+  );
+// } else {
+//   ScaffoldMessenger.of(context).showSnackBar(
+//     const SnackBar(content: Text('No conversation found with this supplier')),
+//   );
+// }
+}
   void _acceptOffer(BuildContext context) async {
     final shouldAccept = await showDialog<bool>(
       context: context,

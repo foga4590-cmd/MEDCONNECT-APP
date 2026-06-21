@@ -8,12 +8,12 @@ import 'package:medconnect_app/models/equipment_model.dart';
 import 'package:medconnect_app/productDetails.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/doctorAccount.dart';
-import 'package:medconnect_app/providers/wishlist_provider.dart';
+//import 'package:medconnect_app/providers/wishlist_provider.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/services/equipment_service.dart'
     as EquipmentApiService;
 import 'package:medconnect_app/services/search_services.dart';
-import 'package:provider/provider.dart';
+//import 'package:provider/provider.dart';
 import '../models/Search_model.dart';
 import 'package:medconnect_app/services/cart_services.dart';
 
@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 void _startPolling() {
-  _pollTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+  _pollTimer = Timer.periodic(Duration(seconds: 60), (timer) {
     if (mounted) {
       _forceRefresh = true;
       _loadProducts(forceRefresh: true).then((_) {
@@ -975,7 +975,7 @@ Widget _skeletonProductCard() {
         // اسم المورد
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: ShimmerSkeleton(width: 100, height: 12, borderRadius: BorderRadius.circular(4)),
+          child: ShimmerSkeleton(width: 100, height: 14, borderRadius: BorderRadius.circular(4)),
         ),
         const SizedBox(height: 8),
         // السعر
@@ -998,15 +998,15 @@ Widget _skeletonProductCard() {
   // PRODUCT CARD
   // ---------------------
   Widget _productCard(Product p) {
-    final wishlistProvider = Provider.of<WishlistProvider>(
-      context,
-      listen: true,
-    );
-    final isInWishlist = wishlistProvider.isInWishlist(p.id);
+   // final wishlistProvider = Provider.of<WishlistProvider>(
+   //   context,
+    //  listen: true,
+   // );
+   // final isInWishlist = wishlistProvider.isInWishlist(p.id);
     // final isInWishlist = wishListGlobal.any((i) => i["name"] == p.name);
-    bool isInequipmentList = equipmentListGlobal.any(
-      (i) => i["name"] == p.name,
-    );
+    //bool isInequipmentList = equipmentListGlobal.any(
+    //  (i) => i["name"] == p.name,
+    //);
     String supplierName = '';
     if (p.supplierData != null && p.supplierData!['company_name'] != null) {
       supplierName = p.supplierData!['company_name'];
@@ -1261,6 +1261,7 @@ Widget _skeletonProductCard() {
         _showCreateNewListDialog(product);
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$e")));
     }
   }
@@ -1296,6 +1297,7 @@ Widget _skeletonProductCard() {
           const SnackBar(content: Text("List created and item added")),
         );
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("$e")));
@@ -1348,6 +1350,7 @@ Widget _skeletonProductCard() {
           const SnackBar(content: Text("List created and item added")),
         );
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("$e")));

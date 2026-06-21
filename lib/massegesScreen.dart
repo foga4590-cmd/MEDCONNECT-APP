@@ -39,21 +39,21 @@ class _MessagesScreenState extends State<MessagesScreen> {
   bool _loading = true;
   String? _error;
   List<int> _conversationIds = [];
- Timer? _refreshTimer; 
+ //Timer? _refreshTimer; 
 
   @override
   void initState() {
     super.initState();
     _fetchConversations();
     filteredChats = _chats;
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if(mounted) _fetchConversations();
-    });
+    // _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    //   if(mounted) _fetchConversations();
+    // });
   }
   @override
   void dispose() {
     
-    _refreshTimer?.cancel();
+    //_refreshTimer?.cancel();
     super.dispose();
   }
   Future<void> _fetchConversations() async {
@@ -229,7 +229,13 @@ if (mounted) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("My Supplier Chats")),
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF101C22)
+          : const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text("Supplier Chats"),
+        backgroundColor: Colors.white,
+        ),
       body: Column(
         children: [
           // 🔎 Search Bar
@@ -257,6 +263,7 @@ if (mounted) {
           // 📋 Chat List
           Expanded(
             child: ListView.builder(
+              
               itemCount: filteredChats.length,
               itemBuilder: (context, index) {
                 final chat = filteredChats[index];
@@ -266,7 +273,7 @@ if (mounted) {
                     children: [
                       const CircleAvatar(
                         radius: 25,
-                        backgroundColor: Color.fromARGB(255, 236, 232, 232),
+                        backgroundColor: Color.fromARGB(255, 232, 232, 236),
                       ),
 
                       if (chat.isOnline)
@@ -323,7 +330,6 @@ if (mounted) {
                   trailing: Text(chat.time),
                   onTap: () {
                     final id = _conversationIds[index];
-                    if (id == null) return;
                     
                     final shouldRefrech = Navigator.push(
                       context,
@@ -331,6 +337,7 @@ if (mounted) {
                         builder: (_) => ChatScreen(
                           chatName: chat.name,
                           conversationId: id,
+                          receiverId: id, // ممكن تحتاجي ID المورد مش المحادثة
                         ),
                       ),
                     );

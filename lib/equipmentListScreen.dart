@@ -89,6 +89,13 @@ class _EquipmentListsScreenState extends State<EquipmentListsScreen> {
         }
       } catch (e) {
         print('❌ Error adding ${item.productId}: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text("${item.productName} $e", style: const TextStyle(color: Colors.white,fontSize: 12)),
+      backgroundColor: Colors.red,
+    ),
+  );
+
       }
     }
   }
@@ -96,7 +103,7 @@ class _EquipmentListsScreenState extends State<EquipmentListsScreen> {
   if (addedCount > 0) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text("🛒 Added $addedCount items to cart"),
+      content: Text("🛒 Added $addedCount items to cart", style: const TextStyle(color: Colors.white, fontSize: 12)),
       backgroundColor: Colors.green,
     ),
   );
@@ -441,6 +448,17 @@ class _EquipmentListsScreenState extends State<EquipmentListsScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
+        leading: IconButton(
+    icon: const Icon(Icons.arrow_back_ios_new),
+    onPressed: () {  //new modification 
+       Navigator.push(
+        context,
+        MaterialPageRoute(
+         builder: (context) => const MainScreen(),
+        ),
+      );
+    },
+        ),
 
         actions: [
           IconButton(
@@ -756,37 +774,37 @@ class _EquipmentListsScreenState extends State<EquipmentListsScreen> {
                                 ),
                               ),
 
-                              if (!item.isAva)
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const MainScreen(),
-                                      ),
-                                      (route) => false,
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: const Text(
-                                      "Search Again",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              // if (!item.isAva)
+                              //   GestureDetector(
+                              //     onTap: () {
+                              //       Navigator.pushAndRemoveUntil(
+                              //         context,
+                              //         MaterialPageRoute(
+                              //           builder: (context) =>
+                              //               const MainScreen(),
+                              //         ),
+                              //         (route) => false,
+                              //       );
+                              //     },
+                              //     child: Container(
+                              //       padding: const EdgeInsets.symmetric(
+                              //         horizontal: 12,
+                              //         vertical: 6,
+                              //       ),
+                              //       decoration: BoxDecoration(
+                              //         color: AppColors.primary.withOpacity(0.1),
+                              //         borderRadius: BorderRadius.circular(20),
+                              //       ),
+                              //       child: const Text(
+                              //         "Search Again",
+                              //         style: TextStyle(
+                              //           fontWeight: FontWeight.bold,
+                              //           color: AppColors.primary,
+                              //           fontSize: 12,
+                              //         ),
+                              //       ),
+                              //     ),
+                              //   ),
                             ],
                           ),
                         );

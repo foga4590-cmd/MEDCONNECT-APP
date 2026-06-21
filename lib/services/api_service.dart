@@ -15,6 +15,7 @@ import 'package:medconnect_app/models/custom_request_model.dart';
 import 'package:medconnect_app/models/offer_request.dart';
 import 'package:medconnect_app/models/product.dart';
 import 'package:medconnect_app/models/review.dart';
+//import 'package:medconnect_app/services/pusher_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:medconnect_app/services/register_services.dart';
@@ -116,6 +117,8 @@ static void clearCache() {
         print('✅ Login success - status 200');
         print('📦 Data: ${data['data']}');
 
+
+      //await PusherService().init(data['token']);
         // تخزين التوكن
         if (data['data'] != null && data['token'] != null) {
           print('💾 Found token: ${data['token']}');
@@ -385,7 +388,9 @@ Future<Product> fetchProductById(int productId) async {
     }
   } catch (e) {
     print('❌ Error fetching product details: $e');
-    throw 'Error loading product: $e';
+    {
+      throw '$e';
+    }
   }
 }
 
@@ -997,6 +1002,7 @@ Future<List<Review>> getProductReviews(int productId) async {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+      print('📦************ Get Reviews Data: $data');
       if (data['success'] == true) {
         final List<dynamic> reviewsData = data['data'];
         return reviewsData.map((json) => Review.fromJson(json)).toList();
@@ -1040,7 +1046,19 @@ Future<Map<String, dynamic>> deleteReview(int reviewId) async {
 }
 
 //################################
-
+Future<int?> getConversationIdWithSupplier(int supplierId) async {
+  try {
+    final conversations = await getConversations();
+    final found = conversations.firstWhere(
+      (conv) => conv['other_user']['id'] == supplierId,
+      orElse: () => null,
+    );
+    return found?['id'];
+  } catch (e) {
+    print('❌ Error getting conversation: $e');
+    return null;
+  }
+}
 // في api_service.dart
 
 // جلب كل المحادثات (للدكتور)
@@ -1052,8 +1070,11 @@ Future<List<dynamic>> getConversations() async {
 
   if (response.statusCode == 200) {
     final data = jsonDecode(response.body);
+    print('📦 Conversations Response: ${data['data']}');
     return data['data'];
+    
   }
+  print('❌ Failed to load conversations: ${response.statusCode} - ${response.body}');
   throw Exception('Failed to load conversations');
 }
 
@@ -1140,18 +1161,18 @@ Future<bool> validateRent({
       }),
     );
 
-    print('📦 Validate Rent Response (${response.statusCode}): ${response.body}');
+    print('📦************* Validate Rent Response (${response.statusCode}): ${response.body}');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['success'] == true || data['sccuess'] == "Rent is validated";
     } else {
       final data = jsonDecode(response.body);
-      throw Exception(data['error'] ?? 'Validation failed');
+      throw Exception(data['error'] ?? data['message'] ?? 'Validation failed');
     }
   } catch (e) {
     print('❌ Validate Rent Error: $e');
-    throw'Failed to validate rent: $e';
+    throw Exception('Failed to validate rent: $e');
   }
 }
 // Future<bool> validateRent({

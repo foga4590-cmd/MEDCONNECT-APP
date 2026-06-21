@@ -6,6 +6,10 @@ class Product {
   final String name;
   final String brand;
   final double price;
+
+
+final double? dailyRent; // ✅ جديد (مهم للإيجار)
+
   final String imagePath;
   final int stock;
   final bool isRentable;
@@ -45,6 +49,7 @@ class Product {
     required this.setupDuration,
 
     required this.reviews,
+    this.dailyRent, // ✅ جديد (مهم للإيجار)
   
   });
   
@@ -84,6 +89,12 @@ class Product {
           .map((r) => Review.fromJson(r))
           .toList();
     }
+double?dailyRent;
+if (json['rental_details'] != null && json['rental_details']['price_daily'] != null) {
+      dailyRent = double.tryParse(json['rental_details']['price_daily'].toString());
+    } else {
+      dailyRent = null;
+    }
 
     return Product(
       id: json['id'],
@@ -108,6 +119,7 @@ class Product {
 
 
        reviews: reviewsList,
+        dailyRent: dailyRent,
     );
   }
   

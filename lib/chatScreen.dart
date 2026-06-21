@@ -1,9 +1,9 @@
-
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/services/api_service.dart';
+//import 'package:medconnect_app/services/pusher_service.dart';
+
 class ChatMessage {
   final int id;
   final String? text;
@@ -19,18 +19,24 @@ class ChatMessage {
     required this.isMe,
   });
 }
+
 class ChatScreen extends StatefulWidget {
   final String chatName;
   final int? conversationId;
+  final int receiverId; // هتحتاجيها عشان تبعتي رسالة
 
-  const ChatScreen({super.key, required this.chatName, required this.conversationId});
+  const ChatScreen({
+    super.key,
+    required this.chatName,
+    required this.conversationId,
+    required this.receiverId,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-
   final TextEditingController _controller = TextEditingController();
   final ApiService _api = ApiService();
   List<ChatMessage> _messages = [];
@@ -39,21 +45,45 @@ class _ChatScreenState extends State<ChatScreen> {
   int? conversationId;
   Timer? _pollTimer;
 
-   @override
+  @override
   void initState() {
     super.initState();
-    if(widget.conversationId != null){
-      conversationId =widget.conversationId;
+    if (widget.conversationId != null) {
+      conversationId = widget.conversationId;
       _loadMessages();
-
+      // _subscribeToPusher();
       _startPolling();
-    }else {
+    } else {
       _fetchOrCreateConversation();
     }
-    
-   
-    
   }
+
+  // void _subscribeToPusher() {
+  //   if (conversationId == null) return;
+
+  //   PusherService().subscribeToConversation(conversationId!, (data) {
+  //     // ✅ رسالة جديدة وصلت فوراً من Pusher
+  //     if (mounted) {
+  //       final isMe = data['sender']['id'] == ApiService.doctorId;
+  //       setState(() {
+  //         _messages.add(
+  //           ChatMessage(
+  //             id: data['id'],
+  //             text: data['body'],
+  //             type: 'text',
+  //             time: DateTime.parse(data['sent_at']),
+  //             isMe: isMe,
+  //           ),
+  //         );
+  //       });
+
+  //       // تحديث read_at تلقائياً
+  //       if (!isMe) {
+  //         _api.markConversationAsRead(conversationId!);
+  //       }
+  //     }
+  //   });
+  // }
 
   void _startPolling() {
     _pollTimer = Timer.periodic( Duration(seconds: 5), (Timer) {
@@ -62,34 +92,38 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     });
   }
-  Future<void> _checkNewMessages() async {
-  if (conversationId == null) return;
+    Future<void> _checkNewMessages() async {
+    if (conversationId == null) return;
 
-  try {
-    final messages = await _api.getMessages(conversationId!);
-    final lastMessage = messages.isNotEmpty ? messages.last['body'] : '';
+    try {
+      final messages = await _api.getMessages(conversationId!);
+      final lastMessage = messages.isNotEmpty ? messages.last['body'] : '';
 
-    // ✅ هنا تقارني بين آخر رسالة موجودة عندك والجديدة
-    if (_messages.isNotEmpty && messages.isNotEmpty) {
-      final currentLastId = _messages.last.id;
-      final newLastId = messages.last['id'];
+      // ✅ هنا تقارني بين آخر رسالة موجودة عندك والجديدة
+      if (_messages.isNotEmpty && messages.isNotEmpty) {
+        final currentLastId = _messages.last.id;
+        final newLastId = messages.last['id'];
 
-      if (newLastId != currentLastId) {
-        // فيه رسائل جديدة
+        if (newLastId != currentLastId) {
+          // فيه رسائل جديدة
+          await _loadMessages();
+        }
+      } else if (messages.isNotEmpty && _messages.isEmpty) {
         await _loadMessages();
       }
-    } else if (messages.isNotEmpty && _messages.isEmpty) {
-      await _loadMessages();
+    } catch (e) {
+      print('Error checking new messages: $e');
     }
-  } catch (e) {
-    print('Error checking new messages: $e');
   }
-}
-@override
-void dispose() {
-  _pollTimer?.cancel();
-  super.dispose();
-}
+  @override
+  void dispose() {
+     _pollTimer?.cancel();
+    // if (conversationId != null) {
+    //   PusherService().unsubscribeFromConversation(conversationId!);
+    // }
+    super.dispose();
+  }
+
   Future<void> _fetchOrCreateConversation() async {
     try {
       final convs = await _api.getConversations();
@@ -110,9 +144,8 @@ void dispose() {
     }
   }
 
-
   Future<void> _loadMessages() async {
-  if (conversationId == null) return;
+    if (conversationId == null) return;
 
   try {
     final messages = await _api.getMessages(conversationId!);
@@ -141,36 +174,41 @@ void dispose() {
       });
     }
   }
-}
-//  Future<void> _loadMessages() async {
-//     if (conversationId == null) return;
-//     final List<dynamic> msgs = await _api.getMessages(conversationId!);
-//     setState(() {
-//       _messages = msgs.map((m) {
-//         return ChatMessage(
-//           text: m['body'],
-//           type: 'text',
-//           time: DateTime.parse(m['created_at']),
-//           isMe: m['sender']['role'] == 'doctor',
-//         );
-//       }).toList();
-//       _loading = false;
-//     });
+  //  Future<void> _loadMessages() async {
+  //     if (conversationId == null) return;
+  //     final List<dynamic> msgs = await _api.getMessages(conversationId!);
+  //     setState(() {
+  //       _messages = msgs.map((m) {
+  //         return ChatMessage(
+  //           text: m['body'],
+  //           type: 'text',
+  //           time: DateTime.parse(m['created_at']),
+  //           isMe: m['sender']['role'] == 'doctor',
+  //         );
+  //       }).toList();
+  //       _loading = false;
+  //     });
 
-
-    
-//   }
+  //   }
 
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
-    try {
-      final newMsg = await _api.sendMessage(
-        receiverId: 30001, // هنا هتحتاجي الـ supplier id
-        message: text,
+    final tempId = DateTime.now().millisecondsSinceEpoch;
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          id: tempId,
+          text: text,
+          type: 'text',
+          time: DateTime.now(),
+          isMe: true,
+        ),
       );
       if(mounted) {
       setState(() {
-        _messages.add(ChatMessage(
+      final index = _messages.indexWhere((m) => m.id == tempId);
+      if (index != -1) {
+        _messages[index] = ChatMessage(
           id: newMsg['id'],
           text: text,
           type: 'text',
@@ -183,6 +221,13 @@ void dispose() {
       Navigator.pop(context,true);
     } catch (e) {
       print(e);
+      
+      // setState(() {
+      //   _messages.removeWhere((m) => m.id == tempId);
+      // });
+      // ScaffoldMessenger.of(
+      //   context,
+      // ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
     }
   }
   // void sendTextMessage() {
@@ -229,11 +274,10 @@ void dispose() {
       appBar: AppBar(
         title: Text(widget.chatName),
         backgroundColor: Colors.white,
-        ),
-      
+      ),
+
       body: Column(
         children: [
-
           /// الرسائل
           Expanded(
             child: ListView.builder(
@@ -243,22 +287,22 @@ void dispose() {
                 final msg = _messages[index];
 
                 return Align(
-                  alignment:
-                      msg.isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: msg.isMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 5),
                     padding: const EdgeInsets.all(12),
                     constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.7),
+                      maxWidth: MediaQuery.of(context).size.width * 0.7,
+                    ),
                     decoration: BoxDecoration(
-                      color:
-                          msg.isMe ? Colors.blue[200] : Colors.grey[300],
+                      color: msg.isMe ? Colors.blue[200] : Colors.grey[300],
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-
                         /// محتوى الرسالة
                         if (msg.type == "text")
                           Align(
@@ -287,6 +331,7 @@ void dispose() {
                           ),
 
                         const SizedBox(height: 5),
+
                         /// الوقت
                         Text(
                           formatTime(msg.time),
@@ -308,7 +353,6 @@ void dispose() {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
               children: [
-
                 /// زرار الإرفاق
                 IconButton(
                   icon: const Icon(Icons.attach_file),
@@ -327,8 +371,7 @@ void dispose() {
                               },
                             ),
                             ListTile(
-                              leading:
-                                  const Icon(Icons.insert_drive_file),
+                              leading: const Icon(Icons.insert_drive_file),
                               title: const Text("Send File"),
                               onTap: () {
                                 Navigator.pop(context);
@@ -360,7 +403,7 @@ void dispose() {
                 ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

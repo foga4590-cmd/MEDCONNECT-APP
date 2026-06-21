@@ -43,6 +43,7 @@ class _doctorAccountPageState extends State<doctorAccountPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
      // bottomNavigationBar: const BottomNavBar(),
       body: SafeArea(
         child: ListView(
@@ -110,7 +111,11 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                 },
               ),
               CircleAvatar(
-                radius: 24,
+                radius: 22,
+                  backgroundColor: Colors.grey[300],
+                  // backgroundImage: const NetworkImage(
+                  //   'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+                  // ),
                 child: IconButton(
                   icon: const Icon(Icons.person, color: Colors.black),
                   onPressed: () {

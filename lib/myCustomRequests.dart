@@ -309,7 +309,14 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
       ),
     );
   }
-
+String _formatDateString(String dateStr) {
+  try {
+    final date = DateTime.parse(dateStr);
+    return "${date.day}/${date.month}/${date.year}";
+  } catch (e) {
+    return dateStr; // لو التاريخ مش صالح
+  }
+}
   Widget _buildRequestCard(CustomRequest request) {
     final isOpen = request.status.toLowerCase() == 'open';
     final isInNegotiation = request.status.toLowerCase() == 'in negotiation';
@@ -317,10 +324,11 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
     final isDelivered = request.status.toLowerCase() == 'delivered';
     final isCancelled = request.status.toLowerCase() == 'cancelled';
     final isExpired = request.status.toLowerCase() == 'expired';
+    final isRental = request.type.toLowerCase() == 'rental';
 
     final showNotification = isOpen;
     final showDelete = isDelivered || isCancelled || isExpired;
-    final showReRequest = isCancelled || isExpired || isDelivered;
+   // final showReRequest = isCancelled || isExpired || isDelivered;
     final showCancelButton = isOpen;
     final isCardClickable = isInNegotiation || isDelivered || isShipped;
 
@@ -423,7 +431,21 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
                   ],
                 ),
               ),
-             
+             Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  request.type,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.blue.shade600,
+                  ),
+                )
+
+
+
+             ),
+              const SizedBox(height: 5),
               // Product Items
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -481,6 +503,20 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if(isRental)...[
+
+                             if (request.rentStartDate != null)
+                      Text(
+                        "Start: ${_formatDateString(request.rentStartDate!)}",
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    if (request.rentEndDate != null)
+                      Text(
+                        "End: ${_formatDateString(request.rentEndDate!)}",
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    const SizedBox(height: 4),
+                          ],
                           Text(
                             "Created: ${_formatDate(request.createdAt)}",
                             style: const TextStyle(
@@ -524,7 +560,7 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
                             ),
                           ),
 
-                        if (showCancelButton && (showDelete || showReRequest))
+                     //   if (showCancelButton && (showDelete || showReRequest))
                           const SizedBox(width: 8),
                         if (showDelete)
                           SizedBox(
@@ -543,28 +579,28 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
                               child: const Text("Delete"),
                             ),
                           ),
-                        SizedBox(width: 5),
-                        if (showReRequest)
-                          SizedBox(
-                            width: 120,
-                            height: 40,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                // TODO: إعادة الطلب
-                                // _reRequest(request);
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0066FF),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                "Re-request",
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ),
+                       // SizedBox(width: 5),
+                        // if (showReRequest)
+                        //   SizedBox(
+                        //     width: 120,
+                        //     height: 40,
+                        //     child: ElevatedButton(
+                        //       onPressed: () {
+                        //         // TODO: إعادة الطلب
+                        //         // _reRequest(request);
+                        //       },
+                        //       style: ElevatedButton.styleFrom(
+                        //         backgroundColor: const Color(0xFF0066FF),
+                        //         shape: RoundedRectangleBorder(
+                        //           borderRadius: BorderRadius.circular(8),
+                        //         ),
+                        //       ),
+                        //       child: const Text(
+                        //         "Re-request",
+                        //         style: TextStyle(color: Colors.white),
+                        //       ),
+                        //     ),
+                        //   ),
                       ],
                     ),
                   ],
@@ -663,10 +699,10 @@ class _MyCustomRequestsPageState extends State<MyCustomRequestsPage> {
     return "${date.day}/${date.month}/${date.year}";
   }
 
-  String _formatDateString(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    return "${date.day}/${date.month}/${date.year}";
-  }
+  // String _formatDateString(String dateStr) {
+  //   final date = DateTime.parse(dateStr);
+  //   return "${date.day}/${date.month}/${date.year}";
+  // }
 
   // void _showCancelDialog(CustomRequest request) {
   //   showDialog(
