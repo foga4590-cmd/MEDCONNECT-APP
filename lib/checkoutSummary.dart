@@ -496,6 +496,7 @@ class CheckoutSummaryPage extends StatelessWidget {
             ),
           );
         },
+        
         child: const Text(
           'Continue To Payment',
           style: TextStyle(

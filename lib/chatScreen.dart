@@ -48,12 +48,19 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+     print('🟢 ChatScreen initState');
+  print('📦 widget.conversationId: ${widget.conversationId}');
+  print('📦 widget.receiverId: ${widget.receiverId}');
+
     if (widget.conversationId != null) {
+       print('✅ conversationId set to: $conversationId');
       conversationId = widget.conversationId;
       _loadMessages();
       // _subscribeToPusher();
       _startPolling();
     } else {
+       print('⚠️ conversationId is null, calling _fetchOrCreateConversation');
+     // _loading = false;
       _fetchOrCreateConversation();
     }
   }
@@ -127,19 +134,30 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _fetchOrCreateConversation() async {
     try {
       final convs = await _api.getConversations();
+      print('📦 Conversations: $convs');
       // دور على المحادثة اللي فيها الـ supplier name = widget.chatName
       final found = convs.firstWhere(
-        (c) => c['other_user']['fullname'] == widget.chatName,
+        (c) => c['other_user']['id'] == widget.receiverId,
         orElse: () => null,
       );
       if (found != null) {
         conversationId = found['id'];
+         print('✅ Found conversation: $conversationId');
         await _loadMessages();
+        _startPolling();
       } else {
+           print('⚠️ No conversation found, waiting for first message');
+        setState(() {
+          _loading=false;
+        });
         // في حالة لسه مفيش محادثة، هتعملي create أول رسالة
         // مش موجود الصراحة في الـ APIs، ممكن أول رسالة تعملها
       }
     } catch (e) {
+      setState(() {
+        _loading=false;
+        _error = e.toString();
+      });
       print(e);
     }
   }
@@ -194,6 +212,10 @@ class _ChatScreenState extends State<ChatScreen> {
   //   }
 
   Future<void> _sendMessage(String text) async {
+    print("-------------------------------");
+    print('Reciver ID : ${widget.receiverId}');
+    print('Messsege ${text}');
+    print("-------------------------------");
     if (text.trim().isEmpty) return;
     final tempId = DateTime.now().millisecondsSinceEpoch;
     setState(() {
@@ -214,9 +236,15 @@ class _ChatScreenState extends State<ChatScreen> {
       receiverId: widget.receiverId, // ✅ من الـ widget
       message: text,
     );
+      print('📦 Full sendMessage Response: $response'); // ✅ برينت
 
-    final newMsg = response['message'];
-    final conv = response['conversation'];
+    // ✅ تحقق من وجود البيانات قبل استخدامها
+  //  Navigator.pop(context,true);
+    final data = response['data'];
+    final newMsg =data['message'];
+    final conv = data['conversation'];
+
+
 
     // ✅ لو أول رسالة، ناخد conversationId
     if (conversationId == null && conv != null) {
@@ -225,28 +253,42 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _startPolling(); // ✅ نبدأ نسمع رسائل جديدة
     }
-setState(() {
-      final index = _messages.indexWhere((m) => m.id == tempId);
-      if (index != -1) {
-        _messages[index] = ChatMessage(
-          id: newMsg['id'],
-          text: text,
-          type: 'text',
-          time: DateTime.now(),
-          isMe: true,
-        );
-      }
-    });
-    //  Navigator.pop(context,true);
+       if (newMsg != null && newMsg['id'] != null) {
+      setState(() {
+        final index = _messages.indexWhere((m) => m.id == tempId);
+        if (index != -1) {
+          _messages[index] = ChatMessage(
+            id: newMsg['id'],
+            text: text,
+            type: 'text',
+            time: DateTime.now(),
+            isMe: true,
+          );
+        }
+      });
+    }
+// setState(() {
+//       final index = _messages.indexWhere((m) => m.id == tempId);
+//       if (index != -1) {
+//         _messages[index] = ChatMessage(
+//           id: newMsg['id'],
+//           text: text,
+//           type: 'text',
+//           time: DateTime.now(),
+//           isMe: true,
+//         );
+//       }
+//     });
+     // Navigator.pop(context,true);
     } catch (e) {
       print(e);
       
-      // setState(() {
-      //   _messages.removeWhere((m) => m.id == tempId);
-      // });
-      // ScaffoldMessenger.of(
-      //   context,
-      // ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
+      setState(() {
+        _messages.removeWhere((m) => m.id == tempId);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
     }
   }
   // void sendTextMessage() {

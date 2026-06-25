@@ -398,6 +398,7 @@ Future<Product> fetchProductById(int productId) async {
 // ------------------- Fetch Products by Supplier ID -------------------
 Future<Map<String, dynamic>> fetchProductsBySupplierId({
   required int supplierId,
+ // required int allUser_id,
   int page = 1,
   int perPage = 10,
 }) async {
@@ -429,17 +430,19 @@ Future<Map<String, dynamic>> fetchProductsBySupplierId({
 
     if (response.statusCode == 200) {
       var data = jsonDecode(response.body);
+
        print('✅ Supplier products API success: ${data['success']}');
         print('📊 Total: ${data['total']}');
         print('📄 Last page: ${data['last_page']}');
         print('📄 Current page: $page');
+
       if (data['success'] == true) {
         List<Product> products = (data['data'] as List)
             .map((json) => Product.fromJson(json))
             .toList();
-           // print("supplier response body: ${response.body}");
+            print("supplier response body: ${response.body}");
          print('✅ Loaded ${products.length} products for supplier $supplierId');
-           print('🔍 Supplier data from API: ${data['data']?.first?['supplier']}');
+        //   print('🔍 Supplier data from API: ${data['data']?.first?['supplier']}');
         // استخراج بيانات المورد من أول منتج (لو موجود)
         // if (products.isNotEmpty && products.first.supplierData != null) {
         //   _cachedSupplierData = products.first.supplierData;
@@ -452,6 +455,7 @@ Future<Map<String, dynamic>> fetchProductsBySupplierId({
           'lastPage': data['last_page'] ?? 1,
           'total': data['total'] ?? 0,
           'perPage': data['per_page'] ?? perPage,
+          'supplier': data['supplier'],
         };
       } else {
         throw data['message'] ?? 'Failed to fetch supplier products';
@@ -785,7 +789,7 @@ String cleanBody = response.body;
           // لو كانت Object عادي (مش قائمة)
           offersData = [data['data']];
         }
-        
+        print('Offer data: ${offersData}');
         return offersData.map((json) => OfferRequest.fromJson(json)).toList();
       } else {
         throw data['message'] ?? 'Failed to fetch offers';
@@ -819,7 +823,7 @@ Future<Map<String, dynamic>> respondToOffer({
       body: responseBody,
     );
 
-    print('📦 Respond to Offer Response (${httpResponse.statusCode}): ${httpResponse.body}');
+    print('📦 Respond to Offer Response&&&&& (${httpResponse.statusCode}): ${httpResponse.body}');
 
     if (httpResponse.statusCode == 200) {
       return jsonDecode(httpResponse.body);
@@ -1081,6 +1085,7 @@ Future<List<dynamic>> getConversations() async {
 
 
 Future<List<dynamic>> getMessages(int convId) async {
+  print('📤 getMessages called with convId: $convId');
   final res = await http.get(
     Uri.parse('$baseUrl/v1/conversations/$convId/messages'),
     headers: _authHeaders(),
@@ -1118,6 +1123,12 @@ Future<void> markConversationAsRead(int conversationId) async {
   }
 }
 Future<Map<String, dynamic>> sendMessage({required int receiverId, required String message}) async {
+   print('Reciver ID : ${receiverId}');
+    print('Messsege ${message}');
+  try {
+    if (_token == null) throw Exception('Please login first');
+ 
+ 
   final res = await http.post(
     Uri.parse('$baseUrl/v1/conversations/messages'),
     headers: {
@@ -1129,7 +1140,21 @@ Future<Map<String, dynamic>> sendMessage({required int receiverId, required Stri
       'message': message,
     }),
   );
-  return jsonDecode(res.body);
+  final data = jsonDecode(res.body);
+    print('📦 sendMessage Response: $data');
+    print('response status: ${res.statusCode}');
+    print("response body ${res.body}");
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      print('@@ send masseges response : $res');
+      return data;
+    } else {
+      throw Exception(data['error'] ?? 'Failed to send message');
+    }
+  } catch (e) {
+    print('❌ sendMessage Error: $e');
+    rethrow;
+  }
+ // return jsonDecode(res.body);
 }
 
 // دالة الـ headers الموحدة
@@ -1164,6 +1189,7 @@ Future<bool> validateRent({
     print('📦************* Validate Rent Response (${response.statusCode}): ${response.body}');
 
     if (response.statusCode == 200) {
+    
       final data = jsonDecode(response.body);
       return data['success'] == true || data['sccuess'] == "Rent is validated";
     } else {
@@ -1172,6 +1198,7 @@ Future<bool> validateRent({
     }
   } catch (e) {
     print('❌ Validate Rent Error: $e');
+    
     throw Exception('Failed to validate rent: $e');
   }
 }

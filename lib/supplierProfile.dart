@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/cartScreen.dart';
+import 'package:medconnect_app/chatScreen.dart';
 import 'package:medconnect_app/core/app_colorSupplier.dart';
 import 'package:medconnect_app/homeScreen.dart';
 import 'package:medconnect_app/models/equipment_model.dart';
@@ -9,7 +10,8 @@ import 'package:medconnect_app/providers/notification_provider.dart';
 //import 'package:medconnect_app/providers/wishlist_provider.dart';
 import 'package:medconnect_app/services/api_service.dart';
 import 'package:medconnect_app/services/cart_services.dart';
-import 'package:medconnect_app/services/equipment_service.dart' as EquipmentApiService;
+import 'package:medconnect_app/services/equipment_service.dart'
+    as EquipmentApiService;
 import 'package:provider/provider.dart';
 //import 'package:provider/provider.dart';
 
@@ -45,7 +47,7 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
   bool _isLoadingMore = false;
   final ScrollController _scrollController = ScrollController();
 
- // Map<int, bool> _notifyStatus = {}; // productId -> isNotified
+  // Map<int, bool> _notifyStatus = {}; // productId -> isNotified
 
   final ApiService _apiService = ApiService();
 
@@ -119,7 +121,6 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
         /// perPage: 50, // يجيب أكبر عدد عشان البحث يكون دقيق
       );
 
-
       setState(() {
         _products = result['products'];
         _totalPages = result['lastPage'];
@@ -127,24 +128,30 @@ class _SupplierProfileScreenState extends State<SupplierProfileScreen> {
         _isLoading = false;
         print('🔄 Load products - current page: $_currentPage');
         print('🔄 Products before: ${_products.length}');
+        print("+++++${result['supplier']}");
 
-        if (_products.isNotEmpty && _products.first.supplierData != null) {
-          _supplierData = _products.first.supplierData;
+        if (result['supplier'] != null) {
+          _supplierData = result['supplier'];
+          print("=====================");
           print('✅ Supplier data loaded: ${_supplierData?['company_name']}');
-          print('✅ Image URL: ${_supplierData?['company_image_url']}');
         }
+        // if (_products.isNotEmpty && _products.first.supplierData != null) {
+        //   _supplierData = _products.first.supplierData;
+        //   print('✅ Supplier data loaded: ${_supplierData?['company_name']}');
+        //   print('✅ Image URL: ${_supplierData?['company_image_url']}');
+        // }
       });
 
-// بعد إضافة المنتجات
-for (var product in result['products']) {
-  if (product.stock == 0 && product.restockDate != null) {
-    final isNotified = await _apiService.isNotified(product.id);
-    Provider.of<NotificationProvider>(context, listen: false)
-        .setNotified(product.id, isNotified);
-  }
-}
-
-
+      // بعد إضافة المنتجات
+      for (var product in result['products']) {
+        if (product.stock == 0 && product.restockDate != null) {
+          final isNotified = await _apiService.isNotified(product.id);
+          Provider.of<NotificationProvider>(
+            context,
+            listen: false,
+          ).setNotified(product.id, isNotified);
+        }
+      }
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -171,6 +178,7 @@ for (var product in result['products']) {
 
     try {
       final result = await _apiService.fetchProductsBySupplierId(
+
         supplierId: widget.supplierId,
         page: _currentPage,
         perPage: 10,
@@ -197,152 +205,170 @@ for (var product in result['products']) {
         print('➕ Adding ${result['products'].length} products');
 
         print('🔄 Products after add: ${_products.length}');
+        // ✅ استخراج بيانات المورد من الـ Response (جاية بره الـ data)
+        if (result['supplier'] != null) {
+          _supplierData = result['supplier'];
+          print('✅ Supplier data loaded: ${_supplierData?['company_name']}');
+        }
       });
 
-
-
       // بعد إضافة المنتجات
-for (var product in result['products']) {
-  if (product.stock == 0 && product.restockDate != null) {
-    final isNotified = await _apiService.isNotified(product.id);
-    Provider.of<NotificationProvider>(context, listen: false)
-        .setNotified(product.id, isNotified);
-  }
-}
+      for (var product in result['products']) {
+        if (product.stock == 0 && product.restockDate != null) {
+          final isNotified = await _apiService.isNotified(product.id);
+          Provider.of<NotificationProvider>(
+            context,
+            listen: false,
+          ).setNotified(product.id, isNotified);
+        }
+      }
     } catch (e) {
       setState(() {
         _isLoadingMore = false;
       });
     }
   }
-void _showAddToListDialog(Product product) async {
-  try {
-    final lists = await EquipmentApiService.getSimpleLists();
-    if (lists.isEmpty) {
-      _showCreateListFirstDialog(product);
-      return;
-    }
 
-    final selectedList = await showDialog<EquipmentList>(
+  void _showAddToListDialog(Product product) async {
+    try {
+      final lists = await EquipmentApiService.getSimpleLists();
+      if (lists.isEmpty) {
+        _showCreateListFirstDialog(product);
+        return;
+      }
+
+      final selectedList = await showDialog<EquipmentList>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Add to Equipment List"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...lists.map(
+                (list) => ListTile(
+                  title: Text(list.listName),
+                  onTap: () => Navigator.pop(ctx, list),
+                ),
+              ),
+              const Divider(),
+              ListTile(
+                title: const Text("+ Create New List"),
+                onTap: () => Navigator.pop(ctx, null),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (selectedList != null) {
+        await EquipmentApiService.addItemToList(selectedList.id, product.id);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Added to list")));
+      } else {
+        _showCreateNewListDialog(product);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
+  void _showCreateNewListDialog(Product product) async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Add to Equipment List"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ...lists.map((list) => ListTile(
-              title: Text(list.listName),
-              onTap: () => Navigator.pop(ctx, list),
-            )),
-            const Divider(),
-            ListTile(
-              title: const Text("+ Create New List"),
-              onTap: () => Navigator.pop(ctx, null),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (selectedList != null) {
-      await EquipmentApiService.addItemToList(selectedList.id, product.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Added to list")),
-      );
-    } else {
-      _showCreateNewListDialog(product);
-    }
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: $e")),
-    );
-  }
-}
-
-void _showCreateNewListDialog(Product product) async {
-  final controller = TextEditingController();
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text("New List Name"),
-      content: TextField(controller: controller),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text("Create"),
-        ),
-      ],
-    ),
-  );
-  if (confirmed == true && controller.text.isNotEmpty) {
-    try {
-      await EquipmentApiService.createEquipmentList(controller.text);
-      final newLists = await EquipmentApiService.getSimpleLists();
-      final newList = newLists.firstWhere((l) => l.listName == controller.text);
-      await EquipmentApiService.addItemToList(newList.id, product.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("List created and item added")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
-    }
-  }
-}
-void _showCreateListFirstDialog(Product product) async {
-  final controller = TextEditingController();
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text("No Lists Found"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text("You don't have any equipment lists yet."),
-          const SizedBox(height: 16),
-          TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: "Enter list name",
-              border: OutlineInputBorder(),
-            ),
+        title: const Text("New List Name"),
+        content: TextField(controller: controller),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Create"),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text("Create"),
-        ),
-      ],
-    ),
-  );
-  
-  if (confirmed == true && controller.text.isNotEmpty) {
-    try {
-      await EquipmentApiService.createEquipmentList(controller.text);
-      final newLists = await EquipmentApiService.getSimpleLists();
-      final newList = newLists.firstWhere((l) => l.listName == controller.text);
-      await EquipmentApiService.addItemToList(newList.id, product.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("List created and item added")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString().replaceAll('Exception:', '')}")),
-      );
+    );
+    if (confirmed == true && controller.text.isNotEmpty) {
+      try {
+        await EquipmentApiService.createEquipmentList(controller.text);
+        final newLists = await EquipmentApiService.getSimpleLists();
+        final newList = newLists.firstWhere(
+          (l) => l.listName == controller.text,
+        );
+        await EquipmentApiService.addItemToList(newList.id, product.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("List created and item added")),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
     }
   }
-}
+
+  void _showCreateListFirstDialog(Product product) async {
+    final controller = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("No Lists Found"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("You don't have any equipment lists yet."),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: "Enter list name",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Create"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && controller.text.isNotEmpty) {
+      try {
+        await EquipmentApiService.createEquipmentList(controller.text);
+        final newLists = await EquipmentApiService.getSimpleLists();
+        final newList = newLists.firstWhere(
+          (l) => l.listName == controller.text,
+        );
+        await EquipmentApiService.addItemToList(newList.id, product.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("List created and item added")),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Error: ${e.toString().replaceAll('Exception:', '')}",
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -351,7 +377,6 @@ void _showCreateListFirstDialog(Product product) async {
         child: Column(
           children: [
             _topBar(context),
-
 
             // في build، بعد الـ AppBar وقبل الـ Expanded
             Expanded(
@@ -492,27 +517,64 @@ void _showCreateListFirstDialog(Product product) async {
           const SizedBox(height: 4),
 
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () {},
-              child: const Text(
-                "Chat with Vendor",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+          _buildChatButton(),
+          // SizedBox(
+          //   width: double.infinity,
+          //   child: ElevatedButton(
+          //     style: ElevatedButton.styleFrom(
+          //       backgroundColor: AppColors.primary,
+          //       padding: const EdgeInsets.symmetric(vertical: 14),
+          //       shape: RoundedRectangleBorder(
+          //         borderRadius: BorderRadius.circular(12),
+          //       ),
+          //     ),
+
+          //     // onPressed: () {
+
+          //     // },
+          //     // child: const Text(
+          //     //   "Chat with Vendor",
+          //     //   style: TextStyle(
+          //     //     fontWeight: FontWeight.bold,
+          //     //     color: Colors.white,
+          //     //   ),
+          //     // ),
+          //   ),
+          // ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatButton() {
+    final conversationId = _supplierData?['conversation_id'];
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ChatScreen(
+                chatName: widget.supplierName,
+                conversationId: conversationId, // ✅ لو null، ChatScreen هيتعامل
+                receiverId: _supplierData?['allUser_id'],
               ),
             ),
-          ),
-        ],
+          );
+        },
+        child: const Text(
+          "Chat with Vendor",
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
       ),
     );
   }
@@ -580,6 +642,7 @@ void _showCreateListFirstDialog(Product product) async {
     if (_supplierData != null) {
       // لو كان certificate_name عبارة عن List
       if (_supplierData!['certificate_name'] is List) {
+       // print('----------${_supplierData['certificate_name']}');
         certificates = List<String>.from(_supplierData!['certificate_name']);
       }
       // لو كان certificate_name string واحد
@@ -676,19 +739,19 @@ void _showCreateListFirstDialog(Product product) async {
       ],
     );
   }
+
   final CartService _cartService = CartService();
 
   Widget _productCard(Product product) {
-
-final notificationProvider = Provider.of<NotificationProvider>(context);
-final isNotified = notificationProvider.isNotified(product.id);
+    final notificationProvider = Provider.of<NotificationProvider>(context);
+    final isNotified = notificationProvider.isNotified(product.id);
 
     print('🃏 Product card: ${product.id} - ${product.name}');
 
     bool isOutOfStock = product.stock == 0;
     //final wishlistProvider = context.watch<WishlistProvider>();
 
-   // final isInWishlist = wishlistProvider.isInWishlist(product.id);
+    // final isInWishlist = wishlistProvider.isInWishlist(product.id);
 
     return GestureDetector(
       onTap: () {
@@ -756,14 +819,11 @@ final isNotified = notificationProvider.isNotified(product.id);
                       "Out of Stock",
                       style: TextStyle(color: Colors.red, fontSize: 12),
                     ),
-                   if (product.isRentable && product.rentalStock! > 0)
+                  if (product.isRentable && product.rentalStock! > 0)
                     const Text(
                       "available for rent",
                       style: TextStyle(color: Colors.blue, fontSize: 12),
                     ),
-
-
-
                 ],
               ),
             ),
@@ -771,100 +831,107 @@ final isNotified = notificationProvider.isNotified(product.id);
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-            if (product.stock == 0 && product.restockDate != null)
-                      IconButton(
-                        icon: Icon(Icons.notifications_active, 
-                        color: isNotified ? Colors.amber : Colors.black),
-                         onPressed: () async {
-                    if (isNotified) {
-                      // ✅ Undo
-                      await _apiService.undoRestockNotification(product.id);
-                      notificationProvider.setNotified(product.id, false);
-                     
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Notification cancelled')),
+                if (product.stock == 0 && product.restockDate != null)
+                  IconButton(
+                    icon: Icon(
+                      Icons.notifications_active,
+                      color: isNotified ? Colors.amber : Colors.black,
+                    ),
+                    onPressed: () async {
+                      if (isNotified) {
+                        // ✅ Undo
+                        await _apiService.undoRestockNotification(product.id);
+                        notificationProvider.setNotified(product.id, false);
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Notification cancelled'),
+                          ),
+                        );
+                      } else {
+                        // ✅ Request
+                        await _apiService.requestRestockNotification(
+                          product.id,
+                        );
+                        notificationProvider.setNotified(product.id, true);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Notification requested!'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+
+                //             onPressed: () {
+
+                //               ScaffoldMessenger.of(context).showSnackBar(
+                // const SnackBar(
+                //   content: Text("We'll notify you when available"),
+                // ),
+                //               );
+
+                //             },
+                const SizedBox(width: 6),
+                if (product.stock > 0)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.shopping_cart_outlined,
+                      color: Colors.black,
+                    ),
+                    onPressed: () async {
+                      //there is change by mohamed
+                      final result = await _cartService.addToCart(
+                        productId: product.id,
+                        quantity: 1,
+                        type: "sale",
                       );
-                    } else {
-                      // ✅ Request
-                      await _apiService.requestRestockNotification(product.id);
-                      notificationProvider.setNotified(product.id, true);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Notification requested!')),
-                      );
-                    }
-                  },
-                ),
 
-            //             onPressed: () {
+                      if (result['success'] != false) {
+                        // ✅ ضيفه local برضو لو عايز
+                        cartItemsGlobal.add(
+                          CartItem(
+                            daily_rent: 0,
+                            name: product.name,
+                            image: product.imagePath,
+                            quantity: 1,
+                            price: product.price,
+                            type: 'sale',
+                            dateRange: '',
+                            id: product.id,
+                            productId: product.id,
+                          ),
+                        );
 
-            //               ScaffoldMessenger.of(context).showSnackBar(
-            // const SnackBar(
-            //   content: Text("We'll notify you when available"),
-            // ),
-            //               );  
-
-            //             },
-                      
-                
-             const SizedBox(width: 6),
-                    if (product.stock > 0)
-                    
-                      IconButton(
-                        icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
-                        onPressed: () async {  //there is change by mohamed
-                          final result = await _cartService.addToCart(
-            productId: product.id,
-            quantity: 1,
-            type: "sale",
-                          );
-            
-                          if (result['success'] != false) {
-            // ✅ ضيفه local برضو لو عايز
-            cartItemsGlobal.add(
-              CartItem(
-                daily_rent: 0,
-                name: product.name,
-                image: product.imagePath,
-                quantity: 1,
-                price: product.price,
-                type: 'sale',
-                dateRange: '',
-                id: product.id,
-                productId: product.id,
-              ),
-            );
-            
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("${product.name} added to cart ✅"),
-                duration: const Duration(seconds: 2),
-              backgroundColor: Colors.blue,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              action: SnackBarAction(
-                label: "View Cart",
-                textColor: Colors.white,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => CartPage()),
-                  );
-                },
-              ),
-              
-              
-              ),
-            );
-                          } else { //there is change by mohamed
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(result['message'] ?? "Error")),
-            );
-                          }
-                        },
-                      
-                      ),    // IconButton(
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("${product.name} added to cart ✅"),
+                            duration: const Duration(seconds: 2),
+                            backgroundColor: Colors.blue,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            action: SnackBarAction(
+                              label: "View Cart",
+                              textColor: Colors.white,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => CartPage()),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      } else {
+                        //there is change by mohamed
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(result['message'] ?? "Error")),
+                        );
+                      }
+                    },
+                  ), // IconButton(
                 //   icon: Icon(
                 //     isInWishlist ? Icons.favorite : Icons.favorite_border,
                 //     color: isInWishlist ? Colors.red : Colors.grey,
@@ -887,7 +954,7 @@ final isNotified = notificationProvider.isNotified(product.id);
                 IconButton(
                   icon: Icon(Icons.playlist_add, color: Colors.grey[700]),
                   onPressed: () {
-                      _showAddToListDialog(product);
+                    _showAddToListDialog(product);
                   },
                 ),
               ],
@@ -961,7 +1028,7 @@ final isNotified = notificationProvider.isNotified(product.id);
   //         // ),
   //       const SizedBox(height: 6),
   //       if (product.stock > 0)
-        
+
   //         IconButton(
   //           icon: const Icon(Icons.shopping_cart_outlined, color: Colors.black),
   //           onPressed: () async {  //there is change by mohamed
@@ -1006,8 +1073,7 @@ final isNotified = notificationProvider.isNotified(product.id);
   //                     );
   //                   },
   //                 ),
-                  
-                  
+
   //                 ),
   //               );
   //             } else { //there is change by mohamed
