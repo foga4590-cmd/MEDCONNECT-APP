@@ -317,14 +317,14 @@ if (!mounted) return;
 
       appBar: AppBar(
         backgroundColor: Colors.white,
-       // automaticallyImplyLeading: false,
+        automaticallyImplyLeading: false,
         title: SizedBox(
           height: 30,
           child: Image.asset("assets/images/logoPNG.png", fit: BoxFit.contain),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_outline, color: Colors.black),
+            icon: const Icon(Icons.settings, color: Colors.black),
             onPressed: () {
               Navigator.push(
                 context,
@@ -395,7 +395,7 @@ if (!mounted) return;
           ///////////////////////////////////////////////////////////////////////
         ],
       ),
-    drawer: _buildDrawer(), // افتح الدروير
+   // drawer: _buildDrawer(), // افتح الدروير
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

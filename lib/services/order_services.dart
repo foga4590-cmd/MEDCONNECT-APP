@@ -36,7 +36,7 @@ class OrderServices {
     );
 
     final data = jsonDecode(response.body);
-
+    print('order details: ${response.body} and status code ${response.statusCode} ');
     if (response.statusCode == 200 && data['success'] == true) {
       final dataPayload = data['data'];
       List<dynamic> ordersJson = [];

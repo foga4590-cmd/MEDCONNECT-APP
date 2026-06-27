@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/services/api_service.dart';
 //import 'package:medconnect_app/services/pusher_service.dart';
-
+//ClientException with SocketException: Failed host lookup: 'pub.dev' (OS Error: No such host is known, errno = 11001), uri=https://pub.dev/api/packages/dio/advisories
+// Failed to update packages.
+// exit code 69
 class ChatMessage {
   final int id;
   final String? text;

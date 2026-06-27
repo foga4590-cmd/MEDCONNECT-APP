@@ -13,48 +13,43 @@ import 'package:medconnect_app/services/Get_doctor_profile.dart';
 //import 'package:medconnect_app/Screens/homeScreen.dart';
 import 'package:shimmer/shimmer.dart';
 
- 
- @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: AppColors.background,
-        useMaterial3: true,
-      ),
-      home:  doctorAccountPage(),
-    );
-  }
+@override
+Widget build(BuildContext context) {
+  return MaterialApp(
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData(
+      fontFamily: 'Inter',
+      scaffoldBackgroundColor: AppColors.background,
+      useMaterial3: true,
+    ),
+    home: doctorAccountPage(),
+  );
+}
 
 // ================= COLORS =================
 
-
 // ================= SCREEN =================
 class doctorAccountPage extends StatefulWidget {
-  
-   doctorAccountPage({super.key});
-
+  doctorAccountPage({super.key});
 
   @override
   State<doctorAccountPage> createState() => _doctorAccountPageState();
 }
+
 class _doctorAccountPageState extends State<doctorAccountPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-     // bottomNavigationBar: const BottomNavBar(),
+      // bottomNavigationBar: const BottomNavBar(),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.only(bottom: 120),
           children: [
-            DashboardHeader(
-            
-            ),
+            DashboardHeader(),
             const RecentOrdersSection(),
             const OldChatsSection(),
-            const CustomRequestsSection(requestType: "", selectedType: "",),
+            const CustomRequestsSection(requestType: "", selectedType: ""),
           ],
         ),
       ),
@@ -104,18 +99,16 @@ class _DashboardHeaderState extends State<DashboardHeader> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const MainScreen(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const MainScreen()),
                   );
                 },
               ),
               CircleAvatar(
                 radius: 22,
-                  backgroundColor: Colors.grey[300],
-                  // backgroundImage: const NetworkImage(
-                  //   'https://cdn-icons-png.flaticon.com/512/149/149071.png',
-                  // ),
+                backgroundColor: Colors.grey[300],
+                // backgroundImage: const NetworkImage(
+                //   'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+                // ),
                 child: IconButton(
                   icon: const Icon(Icons.person, color: Colors.black),
                   onPressed: () {
@@ -132,9 +125,9 @@ class _DashboardHeaderState extends State<DashboardHeader> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Good morning, $doctorFullName!',
+            'Good morning, \n $doctorFullName',
             style: const TextStyle(
-              fontSize: 28,
+              fontSize: 25,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
@@ -144,10 +137,6 @@ class _DashboardHeaderState extends State<DashboardHeader> {
     );
   }
 }
-
-
-
-
 
 class ReorderCard extends StatelessWidget {
   final String title, price, imageUrl;
@@ -174,16 +163,22 @@ class ReorderCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.network(imageUrl,
-                height: 140, width: double.infinity, fit: BoxFit.cover),
+            child: Image.network(
+              imageUrl,
+              height: 140,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 4),
                 Text(price, style: const TextStyle(color: Colors.grey)),
                 const SizedBox(height: 12),
@@ -205,87 +200,247 @@ class ReorderCard extends StatelessWidget {
 }
 
 // ================= RECENT ORDERS =================
-class RecentOrdersSection extends StatelessWidget {
+class RecentOrdersSection extends StatefulWidget {
   const RecentOrdersSection({super.key});
+
+  @override
+  State<RecentOrdersSection> createState() => _RecentOrdersSectionState();
+}
+
+class _RecentOrdersSectionState extends State<RecentOrdersSection> {
+  List<Order> _orders = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentOrders();
+  }
+
+  Future<void> _loadRecentOrders() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final result = await OrderServices.fetchDoctorOrders(
+        page: 1,
+        perPage: 3, // ✅ 3 orders بس
+      );
+
+      setState(() {
+        _orders = result['orders'] as List<Order>;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return sectionCard(
       title: "Recent Orders",
-      child: Column(
-        children: [
-          const OrderRow(
-            "Order #11234",
-            "EKG Machine",
-            "\$3,500",
-            "Delivered",
-            Colors.green,
-          ),
-          const Divider(),
-
-          const OrderRow(
-            "Order #11233",
-            "Defibrillator",
-            "\$2,800",
-            "Shipped",
-            Colors.orange,
-          ),
-          const Divider(),
-
-          const OrderRow(
-            "Order #11232",
-            "Surgical Kit",
-            "\$850",
-            "Processing",
-            Colors.grey,
-          ),
-
-          const SizedBox(height: 12),
-
-          // 🔵 View All Orders Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AllOrdersScreen(),
-                  ),
-                );
-              },
-              child: const Text(
-                "View All Orders",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+      child: _isLoading
+          ? _buildShimmer()
+          : _error != null
+          ? _buildErrorWidget()
+          : _orders.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: Text('No recent orders')),
+            )
+          : Column(
+              children: [
+                ..._orders.map((order) => _buildOrderRow(order)).toList(),
+                const SizedBox(height: 12),
+                _buildViewAllButton(context),
+              ],
             ),
+
+      //const SizedBox(height: 12),
+
+      // 🔵 View All Orders Button
+    );
+  }
+
+  Widget _buildOrderRow(Order order) {
+    final productNames = order.items.isNotEmpty
+        ? order.items.map((item) => item.name).join(', ')
+        : 'No items';
+
+    // تحديد لون الحالة
+    Color statusColor;
+    if (order.status.toLowerCase() == 'confirmed' ||
+        order.status.toLowerCase() == 'delivered') {
+      statusColor = Colors.green;
+    } else if (order.status.toLowerCase() == 'cancelled' ||
+        order.status.toLowerCase() == 'canceled') {
+      statusColor = Colors.red;
+    } else {
+      statusColor = Colors.orange;
+    }
+
+    return ListTile(
+      title: Text(
+        order.invoiceNumber.isNotEmpty
+            ? order.invoiceNumber
+            : 'Order #${order.id}',
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text(
+        productNames,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            '\$${order.total.toStringAsFixed(2)}',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          Text(
+            order.status,
+            style: TextStyle(
+              color: statusColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderDetailsPage(orderId: order.id),
+          ),
+        ).then((_) {
+          _loadRecentOrders(); // تحديث عند الرجوع
+        });
+      },
+    );
+  }
+
+  Widget _buildShimmer() {
+    return Column(children: List.generate(3, (index) => _buildShimmerRow()));
+  }
+
+  Widget _buildShimmerRow() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerSkeleton(
+                  width: 120,
+                  height: 16,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                const SizedBox(height: 4),
+                ShimmerSkeleton(
+                  width: 180,
+                  height: 14,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              ShimmerSkeleton(
+                width: 60,
+                height: 16,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              const SizedBox(height: 4),
+              ShimmerSkeleton(
+                width: 50,
+                height: 12,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
-}
 
+  Widget _buildErrorWidget() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            _error!,
+            style: const TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: _loadRecentOrders,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _buildViewAllButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AllOrdersScreen()),
+          );
+        },
+        child: const Text(
+          "View All Orders",
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+}
+//
 
 class OrderRow extends StatelessWidget {
   final String id, item, price, status;
   final Color statusColor;
 
-  const OrderRow(this.id, this.item, this.price, this.status, this.statusColor,
-      {super.key});
+  const OrderRow(
+    this.id,
+    this.item,
+    this.price,
+    this.status,
+    this.statusColor, {
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -415,23 +570,20 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
         backgroundColor: AppColors.primary,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshOrders,
-        child: _buildBody(),
-      ),
+      body: RefreshIndicator(onRefresh: _refreshOrders, child: _buildBody()),
     );
   }
 
   Widget _buildBody() {
     if (!_hasLoadedOnce) {
-    // عرض 3 بطاقات شيمر أثناء التحميل الأولي
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: 3,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, __) => _buildOrderShimmer(),
-    );
-  }
+      // عرض 3 بطاقات شيمر أثناء التحميل الأولي
+      return ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: 3,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (_, __) => _buildOrderShimmer(),
+      );
+    }
     if (_errorMessage != null) {
       return Center(
         child: Column(
@@ -498,7 +650,7 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 8)
+                BoxShadow(color: Colors.black12, blurRadius: 8),
               ],
             ),
             padding: const EdgeInsets.all(16),
@@ -524,9 +676,9 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
                         color: order.status.toLowerCase() == 'confirmed'
                             ? Colors.green
                             : order.status.toLowerCase() == 'cancelled' ||
-                                    order.status.toLowerCase() == 'canceled'
-                                ? Colors.red
-                                : Colors.orange,
+                                  order.status.toLowerCase() == 'canceled'
+                            ? Colors.red
+                            : Colors.orange,
                       ),
                     ),
                   ],
@@ -565,61 +717,100 @@ class _AllOrdersScreenState extends State<AllOrdersScreen> {
       },
     );
   }
+
   Widget _buildOrderShimmer() {
-  return Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
-    ),
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            ShimmerSkeleton(width: 100, height: 16, borderRadius: BorderRadius.circular(4)),
-            ShimmerSkeleton(width: 60, height: 16, borderRadius: BorderRadius.circular(4)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ShimmerSkeleton(width: double.infinity, height: 14, borderRadius: BorderRadius.circular(4)),
-        const SizedBox(height: 4),
-        ShimmerSkeleton(width: 120, height: 14, borderRadius: BorderRadius.circular(4)),
-        const SizedBox(height: 4),
-        ShimmerSkeleton(width: 200, height: 14, borderRadius: BorderRadius.circular(4)),
-        const SizedBox(height: 4),
-        ShimmerSkeleton(width: 150, height: 14, borderRadius: BorderRadius.circular(4)),
-        const SizedBox(height: 8),
-        ShimmerSkeleton(width: 80, height: 14, borderRadius: BorderRadius.circular(4)),
-      ],
-    ),
-  );
-}
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ShimmerSkeleton(
+                width: 100,
+                height: 16,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              ShimmerSkeleton(
+                width: 60,
+                height: 16,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ShimmerSkeleton(
+            width: double.infinity,
+            height: 14,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 4),
+          ShimmerSkeleton(
+            width: 120,
+            height: 14,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 4),
+          ShimmerSkeleton(
+            width: 200,
+            height: 14,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 4),
+          ShimmerSkeleton(
+            width: 150,
+            height: 14,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          const SizedBox(height: 8),
+          ShimmerSkeleton(
+            width: 80,
+            height: 14,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class ShimmerSkeleton extends StatelessWidget {
   final double width;
   final double height;
   final BorderRadius borderRadius;
-  const ShimmerSkeleton({super.key, required this.width, required this.height, this.borderRadius = const BorderRadius.all(Radius.circular(12))});
+  const ShimmerSkeleton({
+    super.key,
+    required this.width,
+    required this.height,
+    this.borderRadius = const BorderRadius.all(Radius.circular(12)),
+  });
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade300,
       highlightColor: Colors.grey.shade100,
       period: const Duration(milliseconds: 1200),
-      child: Container(width: width, height: height, decoration: BoxDecoration(color: Colors.white, borderRadius: borderRadius)),
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: borderRadius,
+        ),
+      ),
     );
   }
 }
 
 // ================= DISCOUNTS =================
 
-
 // ================= SAVED LISTS =================
-
 
 // ================= CHATS =================
 class OldChatsSection extends StatelessWidget {
@@ -634,135 +825,134 @@ class OldChatsSection extends StatelessWidget {
           child: Column(
             children: [
               ListTile(
-            
-            leading: const Icon(Icons.forum),
-            title: const Text("Medtronic Rep",
-                style: TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: const Text("Re: Anesthesia Machine"),
-            trailing: const Text("2d ago"),
-            
-          ),
-          const SizedBox(height: 8),
-            ]
+                leading: const Icon(Icons.forum),
+                title: const Text(
+                  "Tab To View All Chats",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                //subtitle: const Text("Re: Anesthesia Machine"),
+                trailing: const Icon(Icons.arrow_right),
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(
+                   builder: (_) => MessagesScreen(),
+                 ));
+                },
+              ),
+
+              const SizedBox(height: 8),
+            ],
           ),
         ),
-              // 🔵 View All chats Button
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    onPressed: () {
-                       Navigator.push(context, MaterialPageRoute(
-                         builder: (_) => MessagesScreen(),
-                       ));
-                    },
-                    child: const Text(
-                      "View All Chats",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-        
-            ],
-        
-           
-        
-      
+
+        // 🔵 View All chats Button
+        // Padding(
+        //   padding: const EdgeInsets.all(8.0),
+        //   child: SizedBox(
+        //     width: double.infinity,
+        //     child: ElevatedButton(
+        //       style: ElevatedButton.styleFrom(
+        //         backgroundColor: AppColors.primary,
+        //         foregroundColor: Colors.white,
+        //         padding: const EdgeInsets.symmetric(vertical: 14),
+        //         shape: RoundedRectangleBorder(
+        //           borderRadius: BorderRadius.circular(12),
+        //         ),
+        //         elevation: 0,
+        //       ),
+        //       onPressed: () {
+        //          Navigator.push(context, MaterialPageRoute(
+        //            builder: (_) => MessagesScreen(),
+        //          ));
+        //       },
+        //       child: const Text(
+        //         "View All Chats",
+        //         style: TextStyle(
+        //           fontSize: 16,
+        //           fontWeight: FontWeight.bold,
+        //           color: Colors.white,
+        //         ),
+        //       ),
+        //     ),
+        //   ),
+        // ),
+      ],
     );
   }
 }
 
 // ================= CUSTOM REQUESTS =================
 class CustomRequestsSection extends StatelessWidget {
-    final String requestType;
-    final String selectedType;
+  final String requestType;
+  final String selectedType;
 
-  const CustomRequestsSection({super.key, required this.requestType,required this.selectedType});
-
+  const CustomRequestsSection({
+    super.key,
+    required this.requestType,
+    required this.selectedType,
+  });
 
   void showCustomRequestOptions(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (ctx) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _optionItem(
-              title: "Rent devices",
-              onTap: () {
-                Navigator.pop(ctx); // اقفل الـ bottom sheet
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CustomRequestScreen(
-                      requestType: "Rent devices",
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _optionItem(
+                title: "Rent devices",
+                onTap: () {
+                  Navigator.pop(ctx); // اقفل الـ bottom sheet
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CustomRequestScreen(
+                        requestType: "Rent devices",
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _optionItem(
-              title: "Tools",
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CustomRequestScreen(
-                      requestType: "Tools",
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _optionItem(
+                title: "Tools",
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const CustomRequestScreen(requestType: "Tools"),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            _optionItem(
-              title: "Buy devices",
-              onTap: () {
-                Navigator.pop(ctx);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CustomRequestScreen(
-                      requestType: "Buy devices",
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _optionItem(
+                title: "Buy devices",
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const CustomRequestScreen(requestType: "Buy devices"),
                     ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-
-  Widget _optionItem({
-    required String title,
-    required VoidCallback onTap,
-  }) {
+  Widget _optionItem({required String title, required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -783,15 +973,11 @@ class CustomRequestsSection extends StatelessWidget {
         ),
         child: Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -803,30 +989,21 @@ class CustomRequestsSection extends StatelessWidget {
           child: ListTile(
             leading: const Icon(Icons.edit_note),
             title: const Text(
-              "Request #CR-004",
+              "Tab To View All Custom Requests",
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: const Text("3 quotes received"),
+            // subtitle: const Text("3 quotes received"),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const MyCustomRequestsPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const MyCustomRequestsPage()),
               );
             },
-            trailing: const Text(
-              "Manage",
-              style: TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            trailing: const Icon(Icons.arrow_right),
           ),
         ),
 
         const SizedBox(height: 12), // المسافة اللي في الصورة
-
         // الزر الأزرق لوحده
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -841,25 +1018,27 @@ class CustomRequestsSection extends StatelessWidget {
               elevation: 0,
             ),
             onPressed: () {
-           showCustomRequestOptions(context);
-          if (selectedType.isNotEmpty) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CustomRequestScreen(requestType: selectedType),
-
-                ),
-
-              );
-            };
+              showCustomRequestOptions(context);
+              if (selectedType.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        CustomRequestScreen(requestType: selectedType),
+                  ),
+                );
+              }
+              ;
             },
             icon: const Icon(Icons.add),
-            label: const Text("Make A New Custom Request",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                )),
+            label: const Text(
+              "Make A New Custom Request",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
       ],
@@ -889,30 +1068,31 @@ class CustomRequestsSection extends StatelessWidget {
 
 // ================= HELPERS =================
 Widget sectionTitle(String text) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Text(text,
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-    );
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  child: Text(
+    text,
+    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+  ),
+);
 
 Widget sectionCard({required String title, required Widget child}) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(color: Colors.black12, blurRadius: 8)
-              ],
-            ),
-            child: child,
-          ),
-        ],
+  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        title,
+        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
       ),
-    );
+      const SizedBox(height: 12),
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
+        ),
+        child: child,
+      ),
+    ],
+  ),
+);

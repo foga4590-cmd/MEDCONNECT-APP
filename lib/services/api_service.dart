@@ -934,6 +934,8 @@ Future<Map<String, dynamic>> addToCart({
         'Authorization': 'Bearer $_token',
         'Content-Type': 'application/json',
       },
+
+      
       body: jsonEncode({
         'quantity': quantity,
         'type': type,

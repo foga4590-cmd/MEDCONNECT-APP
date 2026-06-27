@@ -6,6 +6,7 @@ import 'package:medconnect_app/models/offer_request.dart';
 //import 'package:medconnect_app/models/offer_request.dart';
 import 'package:medconnect_app/myCustomRequests.dart';
 import 'package:medconnect_app/services/api_service.dart';
+import 'package:medconnect_app/supplierProfile.dart';
 
 class SupplierBidsPage extends StatefulWidget {
   final int customRequestId;
@@ -346,10 +347,11 @@ Widget _pendingButtons(BuildContext context) {
         const SizedBox(width: 8),
         Expanded(
           child: OutlinedButton(
+            
             onPressed: () {
-              _navigateToChat(context);// TODO: فتح شات مع المورد
+              _navigateToProfile(context);// TODO: فتح شات مع المورد
             },
-            child: const Text("Chat"),
+            child: const Text("Show profile",style: TextStyle (fontSize : 15,)),
           ),
         ),
         const SizedBox(width: 8),
@@ -632,6 +634,18 @@ setState((){
         ),
       ],
     );
+  }
+  
+  void _navigateToProfile(BuildContext context) {
+    final SupplierId= widget.offer.supplierId;
+    final supplierName= widget.offer.supplier.companyName;
+    Navigator.push(context, 
+    
+    MaterialPageRoute(builder: (_)=> SupplierProfileScreen(supplierId: SupplierId, supplierName: supplierName))
+    );
+
+
+
   }
 
   // Widget _rejectedButtons() {
