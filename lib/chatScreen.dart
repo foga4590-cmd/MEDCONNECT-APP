@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:medconnect_app/services/api_service.dart';
-//import 'package:medconnect_app/services/pusher_service.dart';
 
+//import 'package:medconnect_app/services/pusher_service.dart';
+//ClientException with SocketException: Failed host lookup: 'pub.dev' (OS Error: No such host is known, errno = 11001), uri=https://pub.dev/api/packages/dio/advisories
+// Failed to update packages.
+// exit code 69
 class ChatMessage {
   final int id;
   final String? text;
@@ -44,16 +47,24 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _error;
   int? conversationId;
   Timer? _pollTimer;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    print('🟢 ChatScreen initState');
+    print('📦 widget.conversationId: ${widget.conversationId}');
+    print('📦 widget.receiverId: ${widget.receiverId}');
+
     if (widget.conversationId != null) {
+      print('✅ conversationId set to: $conversationId');
       conversationId = widget.conversationId;
       _loadMessages();
       // _subscribeToPusher();
       _startPolling();
     } else {
+      print('⚠️ conversationId is null, calling _fetchOrCreateConversation');
+      // _loading = false;
       _fetchOrCreateConversation();
     }
   }
@@ -86,13 +97,14 @@ class _ChatScreenState extends State<ChatScreen> {
   // }
 
   void _startPolling() {
-    _pollTimer = Timer.periodic( Duration(seconds: 5), (Timer) {
-      if(mounted && conversationId != null) {
+    _pollTimer = Timer.periodic(Duration(seconds: 5), (Timer) {
+      if (mounted && conversationId != null) {
         _checkNewMessages();
       }
     });
   }
-    Future<void> _checkNewMessages() async {
+
+  Future<void> _checkNewMessages() async {
     if (conversationId == null) return;
 
     try {
@@ -115,9 +127,10 @@ class _ChatScreenState extends State<ChatScreen> {
       print('Error checking new messages: $e');
     }
   }
+
   @override
   void dispose() {
-     _pollTimer?.cancel();
+    _pollTimer?.cancel();
     // if (conversationId != null) {
     //   PusherService().unsubscribeFromConversation(conversationId!);
     // }
@@ -127,19 +140,30 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _fetchOrCreateConversation() async {
     try {
       final convs = await _api.getConversations();
+      print('📦 Conversations: $convs');
       // دور على المحادثة اللي فيها الـ supplier name = widget.chatName
       final found = convs.firstWhere(
-        (c) => c['other_user']['fullname'] == widget.chatName,
+        (c) => c['other_user']['id'] == widget.receiverId,
         orElse: () => null,
       );
       if (found != null) {
         conversationId = found['id'];
+        print('✅ Found conversation: $conversationId');
         await _loadMessages();
+        _startPolling();
       } else {
+        print('⚠️ No conversation found, waiting for first message');
+        setState(() {
+          _loading = false;
+        });
         // في حالة لسه مفيش محادثة، هتعملي create أول رسالة
         // مش موجود الصراحة في الـ APIs، ممكن أول رسالة تعملها
       }
     } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
       print(e);
     }
   }
@@ -147,31 +171,41 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadMessages() async {
     if (conversationId == null) return;
 
-  try {
-    final messages = await _api.getMessages(conversationId!);
-    if (mounted) {
-    setState(() {
-      _messages = messages.map((m) {
-        return ChatMessage(
-          id: m['id'],
-          text: m['body'],
-          type: 'text',
-          time: DateTime.parse(m['created_at']),
-          isMe: m['sender']['role'] == 'doctor',
-        );
-      }).toList();
-      _loading = false;
-    });
-    }
+    try {
+      final messages = await _api.getMessages(conversationId!);
+      if (mounted) {
+        setState(() {
+          _messages = messages.map((m) {
+            return ChatMessage(
+              id: m['id'],
+              text: m['body'],
+              type: 'text',
+              time: DateTime.parse(m['created_at']),
+              isMe: m['sender']['role'] == 'doctor',
+            );
+          }).toList();
+          _loading = false;
+        });
 
-    // ✅ بعد تحميل الرسائل نحددها كمقروءة
-    await _api.markConversationAsRead(conversationId!);
-  } catch (e) {
-    if (mounted) {
-      setState(() {
-        _loading = false;
-        _error = e.toString();
-      });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      }
+      // ✅ بعد تحميل الرسائل نحددها كمقروءة
+      await _api.markConversationAsRead(conversationId!);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.toString();
+        });
+      }
     }
   }
   //  Future<void> _loadMessages() async {
@@ -192,6 +226,10 @@ class _ChatScreenState extends State<ChatScreen> {
   //   }
 
   Future<void> _sendMessage(String text) async {
+    print("-------------------------------");
+    print('Reciver ID : ${widget.receiverId}');
+    print('Messsege ${text}');
+    print("-------------------------------");
     if (text.trim().isEmpty) return;
     final tempId = DateTime.now().millisecondsSinceEpoch;
     setState(() {
@@ -204,30 +242,74 @@ class _ChatScreenState extends State<ChatScreen> {
           isMe: true,
         ),
       );
-      if(mounted) {
-      setState(() {
-      final index = _messages.indexWhere((m) => m.id == tempId);
-      if (index != -1) {
-        _messages[index] = ChatMessage(
-          id: newMsg['id'],
-          text: text,
-          type: 'text',
-          time: DateTime.now(),
-          isMe: true,
-        ));
-      });
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
-      _controller.clear();
-      Navigator.pop(context,true);
+    });
+
+    _controller.clear();
+    try {
+      final response = await _api.sendMessage(
+        receiverId: widget.receiverId, // ✅ من الـ widget
+        message: text,
+      );
+      print('📦 Full sendMessage Response: $response'); // ✅ برينت
+
+      // ✅ تحقق من وجود البيانات قبل استخدامها
+      //  Navigator.pop(context,true);
+      final data = response['data'];
+      final newMsg = data['message'];
+      final conv = data['conversation'];
+
+      // ✅ لو أول رسالة، ناخد conversationId
+      if (conversationId == null && conv != null) {
+        setState(() {
+          conversationId = conv['id'];
+        });
+        _startPolling(); // ✅ نبدأ نسمع رسائل جديدة
+      }
+      if (newMsg != null && newMsg['id'] != null) {
+        setState(() {
+          final index = _messages.indexWhere((m) => m.id == tempId);
+          if (index != -1) {
+            _messages[index] = ChatMessage(
+              id: newMsg['id'],
+              text: text,
+              type: 'text',
+              time: DateTime.now(),
+              isMe: true,
+            );
+          }
+        });
+      }
+      // setState(() {
+      //       final index = _messages.indexWhere((m) => m.id == tempId);
+      //       if (index != -1) {
+      //         _messages[index] = ChatMessage(
+      //           id: newMsg['id'],
+      //           text: text,
+      //           type: 'text',
+      //           time: DateTime.now(),
+      //           isMe: true,
+      //         );
+      //       }
+      //     });
+      // Navigator.pop(context,true);
     } catch (e) {
       print(e);
-      
-      // setState(() {
-      //   _messages.removeWhere((m) => m.id == tempId);
-      // });
-      // ScaffoldMessenger.of(
-      //   context,
-      // ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
+
+      setState(() {
+        _messages.removeWhere((m) => m.id == tempId);
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
     }
   }
   // void sendTextMessage() {
@@ -249,19 +331,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // زرار الإرفاق (دلوقتي تجريبي)
   void sendAttachment(String type) {
-    if(mounted) {
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          id: DateTime.now().millisecondsSinceEpoch,
-          text: type == "image" ? "Image Sent" : "File Sent",
-          type: type,
-          time: DateTime.now(),
-          isMe: true,
-        ),
-      );
-    });
-  }
+    if (mounted) {
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            id: DateTime.now().millisecondsSinceEpoch,
+            text: type == "image" ? "Image Sent" : "File Sent",
+            type: type,
+            time: DateTime.now(),
+            isMe: true,
+          ),
+        );
+      });
+    }
   }
 
   String formatTime(DateTime time) {
@@ -271,6 +353,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         title: Text(widget.chatName),
         backgroundColor: Colors.white,
@@ -281,6 +364,7 @@ class _ChatScreenState extends State<ChatScreen> {
           /// الرسائل
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(12),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -354,36 +438,36 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Row(
               children: [
                 /// زرار الإرفاق
-                IconButton(
-                  icon: const Icon(Icons.attach_file),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (_) {
-                        return Wrap(
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.image),
-                              title: const Text("Send Image"),
-                              onTap: () {
-                                Navigator.pop(context);
-                                sendAttachment("image");
-                              },
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.insert_drive_file),
-                              title: const Text("Send File"),
-                              onTap: () {
-                                Navigator.pop(context);
-                                sendAttachment("file");
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                ),
+                // IconButton(
+                //   icon: const Icon(Icons.attach_file),
+                //   onPressed: () {
+                //     showModalBottomSheet(
+                //       context: context,
+                //       builder: (_) {
+                //         return Wrap(
+                //           children: [
+                //             ListTile(
+                //               leading: const Icon(Icons.image),
+                //               title: const Text("Send Image"),
+                //               onTap: () {
+                //                 Navigator.pop(context);
+                //                 sendAttachment("image");
+                //               },
+                //             ),
+                //             ListTile(
+                //               leading: const Icon(Icons.insert_drive_file),
+                //               title: const Text("Send File"),
+                //               onTap: () {
+                //                 Navigator.pop(context);
+                //                 sendAttachment("file");
+                //               },
+                //             ),
+                //           ],
+                //         );
+                //       },
+                //     );
+                //   },
+                // ),
 
                 /// TextField
                 Expanded(

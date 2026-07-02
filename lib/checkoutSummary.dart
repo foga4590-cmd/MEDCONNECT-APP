@@ -147,7 +147,7 @@ class CheckoutSummaryPage extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -496,6 +496,7 @@ class CheckoutSummaryPage extends StatelessWidget {
             ),
           );
         },
+        
         child: const Text(
           'Continue To Payment',
           style: TextStyle(
